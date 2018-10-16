@@ -1199,6 +1199,7 @@ struct rtl8xxxu_priv {
 	struct ieee80211_hw *hw;
 	struct usb_device *udev;
 	struct rtl8xxxu_fileops *fops;
+	struct rtl8xxxu_intfops *intfops;
 
 	spinlock_t tx_urb_lock;
 	struct list_head tx_urb_free_list;
@@ -1363,16 +1364,21 @@ struct rtl8xxxu_fileops {
 	u8 page_num_norm;
 };
 
+struct rtl8xxxu_intfops {
+	u8 (*read8) (struct rtl8xxxu_priv *priv, u16 addr);
+	u16 (*read16) (struct rtl8xxxu_priv *priv, u16 addr);
+	u32 (*read32) (struct rtl8xxxu_priv *priv, u16 addr);
+	int (*write8) (struct rtl8xxxu_priv *priv, u16 addr, u8 val);
+	int (*write16) (struct rtl8xxxu_priv *priv, u16 addr, u16 val);
+	int (*write32) (struct rtl8xxxu_priv *priv, u16 addr, u32 val);
+	int (*writeN) (struct rtl8xxxu_priv *priv, u16 addr, u8 *buf, u16 len);
+};
+
+
 extern int rtl8xxxu_debug;
 
 extern struct rtl8xxxu_reg8val rtl8xxxu_gen1_mac_init_table[];
 extern const u32 rtl8xxxu_iqk_phy_iq_bb_reg[];
-u8 rtl8xxxu_read8(struct rtl8xxxu_priv *priv, u16 addr);
-u16 rtl8xxxu_read16(struct rtl8xxxu_priv *priv, u16 addr);
-u32 rtl8xxxu_read32(struct rtl8xxxu_priv *priv, u16 addr);
-int rtl8xxxu_write8(struct rtl8xxxu_priv *priv, u16 addr, u8 val);
-int rtl8xxxu_write16(struct rtl8xxxu_priv *priv, u16 addr, u16 val);
-int rtl8xxxu_write32(struct rtl8xxxu_priv *priv, u16 addr, u32 val);
 u32 rtl8xxxu_read_rfreg(struct rtl8xxxu_priv *priv,
 			enum rtl8xxxu_rfpath path, u8 reg);
 int rtl8xxxu_write_rfreg(struct rtl8xxxu_priv *priv,
@@ -1450,3 +1456,5 @@ extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;
 extern struct rtl8xxxu_fileops rtl8723au_fops;
 extern struct rtl8xxxu_fileops rtl8723bu_fops;
+
+extern struct rtl8xxxu_intfops rtl8xxxu_usb_intfops;
