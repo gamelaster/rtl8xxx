@@ -338,28 +338,28 @@ static void rtl8723bu_reset_8051(struct rtl8xxxu_priv *priv)
 	u8 val8;
 	u16 sys_func;
 
-	val8 = rtl8xxxu_read8(priv, REG_RSV_CTRL);
+	val8 = priv->intfops->read8(priv, REG_RSV_CTRL);
 	val8 &= ~BIT(1);
-	rtl8xxxu_write8(priv, REG_RSV_CTRL, val8);
+	priv->intfops->write8(priv, REG_RSV_CTRL, val8);
 
-	val8 = rtl8xxxu_read8(priv, REG_RSV_CTRL + 1);
+	val8 = priv->intfops->read8(priv, REG_RSV_CTRL + 1);
 	val8 &= ~BIT(0);
-	rtl8xxxu_write8(priv, REG_RSV_CTRL + 1, val8);
+	priv->intfops->write8(priv, REG_RSV_CTRL + 1, val8);
 
-	sys_func = rtl8xxxu_read16(priv, REG_SYS_FUNC);
+	sys_func = priv->intfops->read16(priv, REG_SYS_FUNC);
 	sys_func &= ~SYS_FUNC_CPU_ENABLE;
-	rtl8xxxu_write16(priv, REG_SYS_FUNC, sys_func);
+	priv->intfops->write16(priv, REG_SYS_FUNC, sys_func);
 
-	val8 = rtl8xxxu_read8(priv, REG_RSV_CTRL);
+	val8 = priv->intfops->read8(priv, REG_RSV_CTRL);
 	val8 &= ~BIT(1);
-	rtl8xxxu_write8(priv, REG_RSV_CTRL, val8);
+	priv->intfops->write8(priv, REG_RSV_CTRL, val8);
 
-	val8 = rtl8xxxu_read8(priv, REG_RSV_CTRL + 1);
+	val8 = priv->intfops->read8(priv, REG_RSV_CTRL + 1);
 	val8 |= BIT(0);
-	rtl8xxxu_write8(priv, REG_RSV_CTRL + 1, val8);
+	priv->intfops->write8(priv, REG_RSV_CTRL + 1, val8);
 
 	sys_func |= SYS_FUNC_CPU_ENABLE;
-	rtl8xxxu_write16(priv, REG_SYS_FUNC, sys_func);
+	priv->intfops->write16(priv, REG_SYS_FUNC, sys_func);
 }
 
 static void
@@ -373,22 +373,22 @@ rtl8723b_set_tx_power(struct rtl8xxxu_priv *priv, int channel, bool ht40)
 	group = rtl8xxxu_gen2_channel_to_group(channel);
 
 	cck = priv->cck_tx_power_index_B[group];
-	val32 = rtl8xxxu_read32(priv, REG_TX_AGC_A_CCK1_MCS32);
+	val32 = priv->intfops->read32(priv, REG_TX_AGC_A_CCK1_MCS32);
 	val32 &= 0xffff00ff;
 	val32 |= (cck << 8);
-	rtl8xxxu_write32(priv, REG_TX_AGC_A_CCK1_MCS32, val32);
+	priv->intfops->write32(priv, REG_TX_AGC_A_CCK1_MCS32, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_TX_AGC_B_CCK11_A_CCK2_11);
+	val32 = priv->intfops->read32(priv, REG_TX_AGC_B_CCK11_A_CCK2_11);
 	val32 &= 0xff;
 	val32 |= ((cck << 8) | (cck << 16) | (cck << 24));
-	rtl8xxxu_write32(priv, REG_TX_AGC_B_CCK11_A_CCK2_11, val32);
+	priv->intfops->write32(priv, REG_TX_AGC_B_CCK11_A_CCK2_11, val32);
 
 	ofdmbase = priv->ht40_1s_tx_power_index_B[group];
 	ofdmbase += priv->ofdm_tx_power_diff[tx_idx].b;
 	ofdm = ofdmbase | ofdmbase << 8 | ofdmbase << 16 | ofdmbase << 24;
 
-	rtl8xxxu_write32(priv, REG_TX_AGC_A_RATE18_06, ofdm);
-	rtl8xxxu_write32(priv, REG_TX_AGC_A_RATE54_24, ofdm);
+	priv->intfops->write32(priv, REG_TX_AGC_A_RATE18_06, ofdm);
+	priv->intfops->write32(priv, REG_TX_AGC_A_RATE54_24, ofdm);
 
 	mcsbase = priv->ht40_1s_tx_power_index_B[group];
 	if (ht40)
@@ -397,8 +397,8 @@ rtl8723b_set_tx_power(struct rtl8xxxu_priv *priv, int channel, bool ht40)
 		mcsbase += priv->ht20_tx_power_diff[tx_idx++].b;
 	mcs = mcsbase | mcsbase << 8 | mcsbase << 16 | mcsbase << 24;
 
-	rtl8xxxu_write32(priv, REG_TX_AGC_A_MCS03_MCS00, mcs);
-	rtl8xxxu_write32(priv, REG_TX_AGC_A_MCS07_MCS04, mcs);
+	priv->intfops->write32(priv, REG_TX_AGC_A_MCS03_MCS00, mcs);
+	priv->intfops->write32(priv, REG_TX_AGC_A_MCS07_MCS04, mcs);
 }
 
 static int rtl8723bu_parse_efuse(struct rtl8xxxu_priv *priv)
@@ -492,19 +492,19 @@ static void rtl8723bu_init_phy_bb(struct rtl8xxxu_priv *priv)
 	u8 val8;
 	u16 val16;
 
-	val16 = rtl8xxxu_read16(priv, REG_SYS_FUNC);
+	val16 = priv->intfops->read16(priv, REG_SYS_FUNC);
 	val16 |= SYS_FUNC_BB_GLB_RSTN | SYS_FUNC_BBRSTB | SYS_FUNC_DIO_RF;
-	rtl8xxxu_write16(priv, REG_SYS_FUNC, val16);
+	priv->intfops->write16(priv, REG_SYS_FUNC, val16);
 
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
 
 	/* 6. 0x1f[7:0] = 0x07 */
 	val8 = RF_ENABLE | RF_RSTB | RF_SDMRSTB;
-	rtl8xxxu_write8(priv, REG_RF_CTRL, val8);
+	priv->intfops->write8(priv, REG_RF_CTRL, val8);
 
 	/* Why? */
-	rtl8xxxu_write8(priv, REG_SYS_FUNC, 0xe3);
-	rtl8xxxu_write8(priv, REG_AFE_XTAL_CTRL + 1, 0x80);
+	priv->intfops->write8(priv, REG_SYS_FUNC, 0xe3);
+	priv->intfops->write8(priv, REG_AFE_XTAL_CTRL + 1, 0x80);
 	rtl8xxxu_init_phy_regs(priv, rtl8723b_phy_1t_init_table);
 
 	rtl8xxxu_init_phy_regs(priv, rtl8xxx_agc_8723bu_table);
@@ -530,38 +530,38 @@ static void rtl8723bu_phy_init_antenna_selection(struct rtl8xxxu_priv *priv)
 {
 	u32 val32;
 
-	val32 = rtl8xxxu_read32(priv, REG_PAD_CTRL1);
+	val32 = priv->intfops->read32(priv, REG_PAD_CTRL1);
 	val32 &= ~(BIT(20) | BIT(24));
-	rtl8xxxu_write32(priv, REG_PAD_CTRL1, val32);
+	priv->intfops->write32(priv, REG_PAD_CTRL1, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_GPIO_MUXCFG);
+	val32 = priv->intfops->read32(priv, REG_GPIO_MUXCFG);
 	val32 &= ~BIT(4);
-	rtl8xxxu_write32(priv, REG_GPIO_MUXCFG, val32);
+	priv->intfops->write32(priv, REG_GPIO_MUXCFG, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_GPIO_MUXCFG);
+	val32 = priv->intfops->read32(priv, REG_GPIO_MUXCFG);
 	val32 |= BIT(3);
-	rtl8xxxu_write32(priv, REG_GPIO_MUXCFG, val32);
+	priv->intfops->write32(priv, REG_GPIO_MUXCFG, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_LEDCFG0);
+	val32 = priv->intfops->read32(priv, REG_LEDCFG0);
 	val32 |= BIT(24);
-	rtl8xxxu_write32(priv, REG_LEDCFG0, val32);
+	priv->intfops->write32(priv, REG_LEDCFG0, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_LEDCFG0);
+	val32 = priv->intfops->read32(priv, REG_LEDCFG0);
 	val32 &= ~BIT(23);
-	rtl8xxxu_write32(priv, REG_LEDCFG0, val32);
+	priv->intfops->write32(priv, REG_LEDCFG0, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_RFE_BUFFER);
+	val32 = priv->intfops->read32(priv, REG_RFE_BUFFER);
 	val32 |= (BIT(0) | BIT(1));
-	rtl8xxxu_write32(priv, REG_RFE_BUFFER, val32);
+	priv->intfops->write32(priv, REG_RFE_BUFFER, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_RFE_CTRL_ANTA_SRC);
+	val32 = priv->intfops->read32(priv, REG_RFE_CTRL_ANTA_SRC);
 	val32 &= 0xffffff00;
 	val32 |= 0x77;
-	rtl8xxxu_write32(priv, REG_RFE_CTRL_ANTA_SRC, val32);
+	priv->intfops->write32(priv, REG_RFE_CTRL_ANTA_SRC, val32);
 
-	val32 = rtl8xxxu_read32(priv, REG_PWR_DATA);
+	val32 = priv->intfops->read32(priv, REG_PWR_DATA);
 	val32 |= PWR_DATA_EEPRPAD_RFE_CTRL_EN;
-	rtl8xxxu_write32(priv, REG_PWR_DATA, val32);
+	priv->intfops->write32(priv, REG_PWR_DATA, val32);
 }
 
 static int rtl8723bu_iqk_path_a(struct rtl8xxxu_priv *priv)
@@ -569,14 +569,14 @@ static int rtl8723bu_iqk_path_a(struct rtl8xxxu_priv *priv)
 	u32 reg_eac, reg_e94, reg_e9c, path_sel, val32;
 	int result = 0;
 
-	path_sel = rtl8xxxu_read32(priv, REG_S0S1_PATH_SWITCH);
+	path_sel = priv->intfops->read32(priv, REG_S0S1_PATH_SWITCH);
 
 	/*
 	 * Leave IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/*
 	 * Enable path A PA in TX IQK mode
@@ -591,70 +591,70 @@ static int rtl8723bu_iqk_path_a(struct rtl8xxxu_priv *priv)
 	/*
 	 * Tx IQK setting
 	 */
-	rtl8xxxu_write32(priv, REG_TX_IQK, 0x01007c00);
-	rtl8xxxu_write32(priv, REG_RX_IQK, 0x01004800);
+	priv->intfops->write32(priv, REG_TX_IQK, 0x01007c00);
+	priv->intfops->write32(priv, REG_RX_IQK, 0x01004800);
 
 	/* path-A IQK setting */
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_A, 0x18008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_A, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_A, 0x18008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_A, 0x38008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
 
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_A, 0x821403ea);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_A, 0x28110000);
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_B, 0x82110000);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_B, 0x28110000);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_A, 0x821403ea);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_A, 0x28110000);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_B, 0x82110000);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_B, 0x28110000);
 
 	/* LO calibration setting */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_RSP, 0x00462911);
+	priv->intfops->write32(priv, REG_IQK_AGC_RSP, 0x00462911);
 
 	/*
 	 * Enter IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
 	val32 |= 0x80800000;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/*
 	 * The vendor driver indicates the USB module is always using
 	 * S0S1 path 1 for the 8723bu. This may be different for 8192eu
 	 */
 	if (priv->rf_paths > 1)
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
 	else
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
 
 	/*
 	 * Bit 12 seems to be BT_GRANT, and is only found in the 8723bu.
 	 * No trace of this in the 8192eu or 8188eu vendor drivers.
 	 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
 
 	/* One shot, path A LOK & IQK */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
 
 	mdelay(1);
 
 	/* Restore Ant Path */
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
 #ifdef RTL8723BU_BT
 	/* GNT_BT = 1 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
 #endif
 
 	/*
 	 * Leave IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/* Check failed */
-	reg_eac = rtl8xxxu_read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
-	reg_e94 = rtl8xxxu_read32(priv, REG_TX_POWER_BEFORE_IQK_A);
-	reg_e9c = rtl8xxxu_read32(priv, REG_TX_POWER_AFTER_IQK_A);
+	reg_eac = priv->intfops->read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
+	reg_e94 = priv->intfops->read32(priv, REG_TX_POWER_BEFORE_IQK_A);
+	reg_e9c = priv->intfops->read32(priv, REG_TX_POWER_AFTER_IQK_A);
 
 	val32 = (reg_e9c >> 16) & 0x3ff;
 	if (val32 & 0x200)
@@ -679,14 +679,14 @@ static int rtl8723bu_rx_iqk_path_a(struct rtl8xxxu_priv *priv)
 	u32 reg_ea4, reg_eac, reg_e94, reg_e9c, path_sel, val32;
 	int result = 0;
 
-	path_sel = rtl8xxxu_read32(priv, REG_S0S1_PATH_SWITCH);
+	path_sel = priv->intfops->read32(priv, REG_S0S1_PATH_SWITCH);
 
 	/*
 	 * Leave IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/*
 	 * Enable path A PA in TX IQK mode
@@ -701,70 +701,70 @@ static int rtl8723bu_rx_iqk_path_a(struct rtl8xxxu_priv *priv)
 	/*
 	 * Tx IQK setting
 	 */
-	rtl8xxxu_write32(priv, REG_TX_IQK, 0x01007c00);
-	rtl8xxxu_write32(priv, REG_RX_IQK, 0x01004800);
+	priv->intfops->write32(priv, REG_TX_IQK, 0x01007c00);
+	priv->intfops->write32(priv, REG_RX_IQK, 0x01004800);
 
 	/* path-A IQK setting */
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_A, 0x18008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_A, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_A, 0x18008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_A, 0x38008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
 
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_A, 0x82160ff0);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_A, 0x28110000);
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_B, 0x82110000);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_B, 0x28110000);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_A, 0x82160ff0);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_A, 0x28110000);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_B, 0x82110000);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_B, 0x28110000);
 
 	/* LO calibration setting */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_RSP, 0x0046a911);
+	priv->intfops->write32(priv, REG_IQK_AGC_RSP, 0x0046a911);
 
 	/*
 	 * Enter IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
 	val32 |= 0x80800000;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/*
 	 * The vendor driver indicates the USB module is always using
 	 * S0S1 path 1 for the 8723bu. This may be different for 8192eu
 	 */
 	if (priv->rf_paths > 1)
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
 	else
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
 
 	/*
 	 * Bit 12 seems to be BT_GRANT, and is only found in the 8723bu.
 	 * No trace of this in the 8192eu or 8188eu vendor drivers.
 	 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
 
 	/* One shot, path A LOK & IQK */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
 
 	mdelay(1);
 
 	/* Restore Ant Path */
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
 #ifdef RTL8723BU_BT
 	/* GNT_BT = 1 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
 #endif
 
 	/*
 	 * Leave IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/* Check failed */
-	reg_eac = rtl8xxxu_read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
-	reg_e94 = rtl8xxxu_read32(priv, REG_TX_POWER_BEFORE_IQK_A);
-	reg_e9c = rtl8xxxu_read32(priv, REG_TX_POWER_AFTER_IQK_A);
+	reg_eac = priv->intfops->read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
+	reg_e94 = priv->intfops->read32(priv, REG_TX_POWER_BEFORE_IQK_A);
+	reg_e9c = priv->intfops->read32(priv, REG_TX_POWER_AFTER_IQK_A);
 
 	val32 = (reg_e9c >> 16) & 0x3ff;
 	if (val32 & 0x200)
@@ -782,14 +782,14 @@ static int rtl8723bu_rx_iqk_path_a(struct rtl8xxxu_priv *priv)
 
 	val32 = 0x80007c00 | (reg_e94 &0x3ff0000) |
 		((reg_e9c & 0x3ff0000) >> 16);
-	rtl8xxxu_write32(priv, REG_TX_IQK, val32);
+	priv->intfops->write32(priv, REG_TX_IQK, val32);
 
 	/*
 	 * Modify RX IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 	val32 = rtl8xxxu_read_rfreg(priv, RF_A, RF6052_REG_WE_LUT);
 	val32 |= 0x80000;
 	rtl8xxxu_write_rfreg(priv, RF_A, RF6052_REG_WE_LUT, val32);
@@ -806,63 +806,63 @@ static int rtl8723bu_rx_iqk_path_a(struct rtl8xxxu_priv *priv)
 	/*
 	 * RX IQK setting
 	 */
-	rtl8xxxu_write32(priv, REG_RX_IQK, 0x01004800);
+	priv->intfops->write32(priv, REG_RX_IQK, 0x01004800);
 
 	/* path-A IQK setting */
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_A, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_A, 0x18008c1c);
-	rtl8xxxu_write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
-	rtl8xxxu_write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_A, 0x38008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_A, 0x18008c1c);
+	priv->intfops->write32(priv, REG_TX_IQK_TONE_B, 0x38008c1c);
+	priv->intfops->write32(priv, REG_RX_IQK_TONE_B, 0x38008c1c);
 
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_A, 0x82110000);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_A, 0x2816001f);
-	rtl8xxxu_write32(priv, REG_TX_IQK_PI_B, 0x82110000);
-	rtl8xxxu_write32(priv, REG_RX_IQK_PI_B, 0x28110000);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_A, 0x82110000);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_A, 0x2816001f);
+	priv->intfops->write32(priv, REG_TX_IQK_PI_B, 0x82110000);
+	priv->intfops->write32(priv, REG_RX_IQK_PI_B, 0x28110000);
 
 	/* LO calibration setting */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_RSP, 0x0046a8d1);
+	priv->intfops->write32(priv, REG_IQK_AGC_RSP, 0x0046a8d1);
 
 	/*
 	 * Enter IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
 	val32 |= 0x80800000;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	if (priv->rf_paths > 1)
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000000);
 	else
-		rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
+		priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00000280);
 
 	/*
 	 * Disable BT
 	 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00000800);
 
 	/* One shot, path A LOK & IQK */
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
-	rtl8xxxu_write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf9000000);
+	priv->intfops->write32(priv, REG_IQK_AGC_PTS, 0xf8000000);
 
 	mdelay(1);
 
 	/* Restore Ant Path */
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, path_sel);
 #ifdef RTL8723BU_BT
 	/* GNT_BT = 1 */
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, 0x00001800);
 #endif
 
 	/*
 	 * Leave IQK mode
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	/* Check failed */
-	reg_eac = rtl8xxxu_read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
-	reg_ea4 = rtl8xxxu_read32(priv, REG_RX_POWER_BEFORE_IQK_A_2);
+	reg_eac = priv->intfops->read32(priv, REG_RX_POWER_AFTER_IQK_A_2);
+	reg_ea4 = priv->intfops->read32(priv, REG_RX_POWER_BEFORE_IQK_A_2);
 
 	rtl8xxxu_write_rfreg(priv, RF_A, RF6052_REG_UNKNOWN_DF, 0x780);
 
@@ -910,8 +910,8 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 		REG_FPGA0_XAB_RF_SW_CTRL, REG_FPGA0_XA_RF_INT_OE,
 		REG_FPGA0_XB_RF_INT_OE, REG_FPGA0_RF_MODE
 	};
-	u8 xa_agc = rtl8xxxu_read32(priv, REG_OFDM0_XA_AGC_CORE1) & 0xff;
-	u8 xb_agc = rtl8xxxu_read32(priv, REG_OFDM0_XB_AGC_CORE1) & 0xff;
+	u8 xa_agc = priv->intfops->read32(priv, REG_OFDM0_XA_AGC_CORE1) & 0xff;
+	u8 xb_agc = priv->intfops->read32(priv, REG_OFDM0_XB_AGC_CORE1) & 0xff;
 
 	/*
 	 * Note: IQ calibration must be performed after loading
@@ -932,21 +932,21 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 	/* MAC settings */
 	rtl8xxxu_mac_calibration(priv, iqk_mac_regs, priv->mac_backup);
 
-	val32 = rtl8xxxu_read32(priv, REG_CCK0_AFE_SETTING);
+	val32 = priv->intfops->read32(priv, REG_CCK0_AFE_SETTING);
 	val32 |= 0x0f000000;
-	rtl8xxxu_write32(priv, REG_CCK0_AFE_SETTING, val32);
+	priv->intfops->write32(priv, REG_CCK0_AFE_SETTING, val32);
 
-	rtl8xxxu_write32(priv, REG_OFDM0_TRX_PATH_ENABLE, 0x03a05600);
-	rtl8xxxu_write32(priv, REG_OFDM0_TR_MUX_PAR, 0x000800e4);
-	rtl8xxxu_write32(priv, REG_FPGA0_XCD_RF_SW_CTRL, 0x22204000);
+	priv->intfops->write32(priv, REG_OFDM0_TRX_PATH_ENABLE, 0x03a05600);
+	priv->intfops->write32(priv, REG_OFDM0_TR_MUX_PAR, 0x000800e4);
+	priv->intfops->write32(priv, REG_FPGA0_XCD_RF_SW_CTRL, 0x22204000);
 
 	/*
 	 * RX IQ calibration setting for 8723B D cut large current issue
 	 * when leaving IPS
 	 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	val32 = rtl8xxxu_read_rfreg(priv, RF_A, RF6052_REG_WE_LUT);
 	val32 |= 0x80000;
@@ -965,14 +965,14 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 	for (i = 0; i < retry; i++) {
 		path_a_ok = rtl8723bu_iqk_path_a(priv);
 		if (path_a_ok == 0x01) {
-			val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+			val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 			val32 &= 0x000000ff;
-			rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+			priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
-			val32 = rtl8xxxu_read32(priv,
+			val32 = priv->intfops->read32(priv,
 						REG_TX_POWER_BEFORE_IQK_A);
 			result[t][0] = (val32 >> 16) & 0x3ff;
-			val32 = rtl8xxxu_read32(priv,
+			val32 = priv->intfops->read32(priv,
 						REG_TX_POWER_AFTER_IQK_A);
 			result[t][1] = (val32 >> 16) & 0x3ff;
 
@@ -986,10 +986,10 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 	for (i = 0; i < retry; i++) {
 		path_a_ok = rtl8723bu_rx_iqk_path_a(priv);
 		if (path_a_ok == 0x03) {
-			val32 = rtl8xxxu_read32(priv,
+			val32 = priv->intfops->read32(priv,
 						REG_RX_POWER_BEFORE_IQK_A_2);
 			result[t][2] = (val32 >> 16) & 0x3ff;
-			val32 = rtl8xxxu_read32(priv,
+			val32 = priv->intfops->read32(priv,
 						REG_RX_POWER_AFTER_IQK_A_2);
 			result[t][3] = (val32 >> 16) & 0x3ff;
 
@@ -1008,15 +1008,15 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 		/*
 		 * Path A into standby
 		 */
-		val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+		val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 		val32 &= 0x000000ff;
-		rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+		priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 		rtl8xxxu_write_rfreg(priv, RF_A, RF6052_REG_AC, 0x10000);
 
-		val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+		val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 		val32 &= 0x000000ff;
 		val32 |= 0x80800000;
-		rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+		priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 		/* Turn Path B ADDA on */
 		rtl8xxxu_path_adda_on(priv, adda_regs, false);
@@ -1024,9 +1024,9 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 		for (i = 0; i < retry; i++) {
 			path_b_ok = rtl8xxxu_iqk_path_b(priv);
 			if (path_b_ok == 0x03) {
-				val32 = rtl8xxxu_read32(priv, REG_TX_POWER_BEFORE_IQK_B);
+				val32 = priv->intfops->read32(priv, REG_TX_POWER_BEFORE_IQK_B);
 				result[t][4] = (val32 >> 16) & 0x3ff;
-				val32 = rtl8xxxu_read32(priv, REG_TX_POWER_AFTER_IQK_B);
+				val32 = priv->intfops->read32(priv, REG_TX_POWER_AFTER_IQK_B);
 				result[t][5] = (val32 >> 16) & 0x3ff;
 				break;
 			}
@@ -1038,10 +1038,10 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 		for (i = 0; i < retry; i++) {
 			path_b_ok = rtl8723bu_rx_iqk_path_b(priv);
 			if (path_a_ok == 0x03) {
-				val32 = rtl8xxxu_read32(priv,
+				val32 = priv->intfops->read32(priv,
 							REG_RX_POWER_BEFORE_IQK_B_2);
 				result[t][6] = (val32 >> 16) & 0x3ff;
-				val32 = rtl8xxxu_read32(priv,
+				val32 = priv->intfops->read32(priv,
 							REG_RX_POWER_AFTER_IQK_B_2);
 				result[t][7] = (val32 >> 16) & 0x3ff;
 				break;
@@ -1054,9 +1054,9 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 	}
 
 	/* Back to BB mode, load original value */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 &= 0x000000ff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 
 	if (t) {
 		/* Reload ADDA power saving parameters */
@@ -1071,23 +1071,23 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 				      priv->bb_backup, RTL8XXXU_BB_REGS);
 
 		/* Restore RX initial gain */
-		val32 = rtl8xxxu_read32(priv, REG_OFDM0_XA_AGC_CORE1);
+		val32 = priv->intfops->read32(priv, REG_OFDM0_XA_AGC_CORE1);
 		val32 &= 0xffffff00;
-		rtl8xxxu_write32(priv, REG_OFDM0_XA_AGC_CORE1, val32 | 0x50);
-		rtl8xxxu_write32(priv, REG_OFDM0_XA_AGC_CORE1, val32 | xa_agc);
+		priv->intfops->write32(priv, REG_OFDM0_XA_AGC_CORE1, val32 | 0x50);
+		priv->intfops->write32(priv, REG_OFDM0_XA_AGC_CORE1, val32 | xa_agc);
 
 		if (priv->tx_paths > 1) {
-			val32 = rtl8xxxu_read32(priv, REG_OFDM0_XB_AGC_CORE1);
+			val32 = priv->intfops->read32(priv, REG_OFDM0_XB_AGC_CORE1);
 			val32 &= 0xffffff00;
-			rtl8xxxu_write32(priv, REG_OFDM0_XB_AGC_CORE1,
+			priv->intfops->write32(priv, REG_OFDM0_XB_AGC_CORE1,
 					 val32 | 0x50);
-			rtl8xxxu_write32(priv, REG_OFDM0_XB_AGC_CORE1,
+			priv->intfops->write32(priv, REG_OFDM0_XB_AGC_CORE1,
 					 val32 | xb_agc);
 		}
 
 		/* Load 0xe30 IQC default value */
-		rtl8xxxu_write32(priv, REG_TX_IQK_TONE_A, 0x01008c00);
-		rtl8xxxu_write32(priv, REG_RX_IQK_TONE_A, 0x01008c00);
+		priv->intfops->write32(priv, REG_TX_IQK_TONE_A, 0x01008c00);
+		priv->intfops->write32(priv, REG_RX_IQK_TONE_A, 0x01008c00);
 	}
 }
 
@@ -1111,7 +1111,7 @@ static void rtl8723bu_phy_iq_calibrate(struct rtl8xxxu_priv *priv)
 	path_a_ok = false;
 	path_b_ok = false;
 
-	bt_control = rtl8xxxu_read32(priv, REG_BT_CONTROL_8723BU);
+	bt_control = priv->intfops->read32(priv, REG_BT_CONTROL_8723BU);
 
 	for (i = 0; i < 3; i++) {
 		rtl8723bu_phy_iqcalibrate(priv, result, i);
@@ -1196,7 +1196,7 @@ static void rtl8723bu_phy_iq_calibrate(struct rtl8xxxu_priv *priv)
 	rtl8xxxu_save_regs(priv, rtl8xxxu_iqk_phy_iq_bb_reg,
 			   priv->bb_recovery_backup, RTL8XXXU_BB_REGS);
 
-	rtl8xxxu_write32(priv, REG_BT_CONTROL_8723BU, bt_control);
+	priv->intfops->write32(priv, REG_BT_CONTROL_8723BU, bt_control);
 
 	val32 = rtl8xxxu_read_rfreg(priv, RF_A, RF6052_REG_WE_LUT);
 	val32 |= 0x80000;
@@ -1223,25 +1223,25 @@ static int rtl8723bu_active_to_emu(struct rtl8xxxu_priv *priv)
 	int count, ret = 0;
 
 	/* Turn off RF */
-	rtl8xxxu_write8(priv, REG_RF_CTRL, 0);
+	priv->intfops->write8(priv, REG_RF_CTRL, 0);
 
 	/* Enable rising edge triggering interrupt */
-	val16 = rtl8xxxu_read16(priv, REG_GPIO_INTM);
+	val16 = priv->intfops->read16(priv, REG_GPIO_INTM);
 	val16 &= ~GPIO_INTM_EDGE_TRIG_IRQ;
-	rtl8xxxu_write16(priv, REG_GPIO_INTM, val16);
+	priv->intfops->write16(priv, REG_GPIO_INTM, val16);
 
 	/* Release WLON reset 0x04[16]= 1*/
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 	val32 |= APS_FSMCO_WLON_RESET;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	/* 0x0005[1] = 1 turn off MAC by HW state machine*/
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+	val8 = priv->intfops->read8(priv, REG_APS_FSMCO + 1);
 	val8 |= BIT(1);
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 1, val8);
+	priv->intfops->write8(priv, REG_APS_FSMCO + 1, val8);
 
 	for (count = RTL8XXXU_MAX_REG_POLL; count; count--) {
-		val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+		val8 = priv->intfops->read8(priv, REG_APS_FSMCO + 1);
 		if ((val8 & BIT(1)) == 0)
 			break;
 		udelay(10);
@@ -1255,19 +1255,19 @@ static int rtl8723bu_active_to_emu(struct rtl8xxxu_priv *priv)
 	}
 
 	/* Enable BT control XTAL setting */
-	val8 = rtl8xxxu_read8(priv, REG_AFE_MISC);
+	val8 = priv->intfops->read8(priv, REG_AFE_MISC);
 	val8 &= ~AFE_MISC_WL_XTAL_CTRL;
-	rtl8xxxu_write8(priv, REG_AFE_MISC, val8);
+	priv->intfops->write8(priv, REG_AFE_MISC, val8);
 
 	/* 0x0000[5] = 1 analog Ips to digital, 1:isolation */
-	val8 = rtl8xxxu_read8(priv, REG_SYS_ISO_CTRL);
+	val8 = priv->intfops->read8(priv, REG_SYS_ISO_CTRL);
 	val8 |= SYS_ISO_ANALOG_IPS;
-	rtl8xxxu_write8(priv, REG_SYS_ISO_CTRL, val8);
+	priv->intfops->write8(priv, REG_SYS_ISO_CTRL, val8);
 
 	/* 0x0020[0] = 0 disable LDOA12 MACRO block*/
-	val8 = rtl8xxxu_read8(priv, REG_LDOA15_CTRL);
+	val8 = priv->intfops->read8(priv, REG_LDOA15_CTRL);
 	val8 &= ~LDOA15_ENABLE;
-	rtl8xxxu_write8(priv, REG_LDOA15_CTRL, val8);
+	priv->intfops->write8(priv, REG_LDOA15_CTRL, val8);
 
 exit:
 	return ret;
@@ -1280,30 +1280,30 @@ static int rtl8723b_emu_to_active(struct rtl8xxxu_priv *priv)
 	int count, ret = 0;
 
 	/* 0x20[0] = 1 enable LDOA12 MACRO block for all interface */
-	val8 = rtl8xxxu_read8(priv, REG_LDOA15_CTRL);
+	val8 = priv->intfops->read8(priv, REG_LDOA15_CTRL);
 	val8 |= LDOA15_ENABLE;
-	rtl8xxxu_write8(priv, REG_LDOA15_CTRL, val8);
+	priv->intfops->write8(priv, REG_LDOA15_CTRL, val8);
 
 	/* 0x67[0] = 0 to disable BT_GPS_SEL pins*/
-	val8 = rtl8xxxu_read8(priv, 0x0067);
+	val8 = priv->intfops->read8(priv, 0x0067);
 	val8 &= ~BIT(4);
-	rtl8xxxu_write8(priv, 0x0067, val8);
+	priv->intfops->write8(priv, 0x0067, val8);
 
 	mdelay(1);
 
 	/* 0x00[5] = 0 release analog Ips to digital, 1:isolation */
-	val8 = rtl8xxxu_read8(priv, REG_SYS_ISO_CTRL);
+	val8 = priv->intfops->read8(priv, REG_SYS_ISO_CTRL);
 	val8 &= ~SYS_ISO_ANALOG_IPS;
-	rtl8xxxu_write8(priv, REG_SYS_ISO_CTRL, val8);
+	priv->intfops->write8(priv, REG_SYS_ISO_CTRL, val8);
 
 	/* Disable SW LPS 0x04[10]= 0 */
-	val32 = rtl8xxxu_read8(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read8(priv, REG_APS_FSMCO);
 	val32 &= ~APS_FSMCO_SW_LPS;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	/* Wait until 0x04[17] = 1 power ready */
 	for (count = RTL8XXXU_MAX_REG_POLL; count; count--) {
-		val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+		val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 		if (val32 & BIT(17))
 			break;
 
@@ -1318,27 +1318,27 @@ static int rtl8723b_emu_to_active(struct rtl8xxxu_priv *priv)
 	/* We should be able to optimize the following three entries into one */
 
 	/* Release WLON reset 0x04[16]= 1*/
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 	val32 |= APS_FSMCO_WLON_RESET;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	/* Disable HWPDN 0x04[15]= 0*/
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 	val32 &= ~APS_FSMCO_HW_POWERDOWN;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	/* Disable WL suspend*/
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 	val32 &= ~(APS_FSMCO_HW_SUSPEND | APS_FSMCO_PCIE);
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	/* Set, then poll until 0 */
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 	val32 |= APS_FSMCO_MAC_ENABLE;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->intfops->write32(priv, REG_APS_FSMCO, val32);
 
 	for (count = RTL8XXXU_MAX_REG_POLL; count; count--) {
-		val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+		val32 = priv->intfops->read32(priv, REG_APS_FSMCO);
 		if ((val32 & APS_FSMCO_MAC_ENABLE) == 0) {
 			ret = 0;
 			break;
@@ -1352,43 +1352,43 @@ static int rtl8723b_emu_to_active(struct rtl8xxxu_priv *priv)
 	}
 
 	/* Enable WL control XTAL setting */
-	val8 = rtl8xxxu_read8(priv, REG_AFE_MISC);
+	val8 = priv->intfops->read8(priv, REG_AFE_MISC);
 	val8 |= AFE_MISC_WL_XTAL_CTRL;
-	rtl8xxxu_write8(priv, REG_AFE_MISC, val8);
+	priv->intfops->write8(priv, REG_AFE_MISC, val8);
 
 	/* Enable falling edge triggering interrupt */
-	val8 = rtl8xxxu_read8(priv, REG_GPIO_INTM + 1);
+	val8 = priv->intfops->read8(priv, REG_GPIO_INTM + 1);
 	val8 |= BIT(1);
-	rtl8xxxu_write8(priv, REG_GPIO_INTM + 1, val8);
+	priv->intfops->write8(priv, REG_GPIO_INTM + 1, val8);
 
 	/* Enable GPIO9 interrupt mode */
-	val8 = rtl8xxxu_read8(priv, REG_GPIO_IO_SEL_2 + 1);
+	val8 = priv->intfops->read8(priv, REG_GPIO_IO_SEL_2 + 1);
 	val8 |= BIT(1);
-	rtl8xxxu_write8(priv, REG_GPIO_IO_SEL_2 + 1, val8);
+	priv->intfops->write8(priv, REG_GPIO_IO_SEL_2 + 1, val8);
 
 	/* Enable GPIO9 input mode */
-	val8 = rtl8xxxu_read8(priv, REG_GPIO_IO_SEL_2);
+	val8 = priv->intfops->read8(priv, REG_GPIO_IO_SEL_2);
 	val8 &= ~BIT(1);
-	rtl8xxxu_write8(priv, REG_GPIO_IO_SEL_2, val8);
+	priv->intfops->write8(priv, REG_GPIO_IO_SEL_2, val8);
 
 	/* Enable HSISR GPIO[C:0] interrupt */
-	val8 = rtl8xxxu_read8(priv, REG_HSIMR);
+	val8 = priv->intfops->read8(priv, REG_HSIMR);
 	val8 |= BIT(0);
-	rtl8xxxu_write8(priv, REG_HSIMR, val8);
+	priv->intfops->write8(priv, REG_HSIMR, val8);
 
 	/* Enable HSISR GPIO9 interrupt */
-	val8 = rtl8xxxu_read8(priv, REG_HSIMR + 2);
+	val8 = priv->intfops->read8(priv, REG_HSIMR + 2);
 	val8 |= BIT(1);
-	rtl8xxxu_write8(priv, REG_HSIMR + 2, val8);
+	priv->intfops->write8(priv, REG_HSIMR + 2, val8);
 
-	val8 = rtl8xxxu_read8(priv, REG_MULTI_FUNC_CTRL);
+	val8 = priv->intfops->read8(priv, REG_MULTI_FUNC_CTRL);
 	val8 |= MULTI_WIFI_HW_ROF_EN;
-	rtl8xxxu_write8(priv, REG_MULTI_FUNC_CTRL, val8);
+	priv->intfops->write8(priv, REG_MULTI_FUNC_CTRL, val8);
 
 	/* For GPIO9 internal pull high setting BIT(14) */
-	val8 = rtl8xxxu_read8(priv, REG_MULTI_FUNC_CTRL + 1);
+	val8 = priv->intfops->read8(priv, REG_MULTI_FUNC_CTRL + 1);
 	val8 |= BIT(6);
-	rtl8xxxu_write8(priv, REG_MULTI_FUNC_CTRL + 1, val8);
+	priv->intfops->write8(priv, REG_MULTI_FUNC_CTRL + 1, val8);
 
 exit:
 	return ret;
@@ -1411,41 +1411,41 @@ static int rtl8723bu_power_on(struct rtl8xxxu_priv *priv)
 	 * Enable MAC DMA/WMAC/SCHEDULE/SEC block
 	 * Set CR bit10 to enable 32k calibration.
 	 */
-	val16 = rtl8xxxu_read16(priv, REG_CR);
+	val16 = priv->intfops->read16(priv, REG_CR);
 	val16 |= (CR_HCI_TXDMA_ENABLE | CR_HCI_RXDMA_ENABLE |
 		  CR_TXDMA_ENABLE | CR_RXDMA_ENABLE |
 		  CR_PROTOCOL_ENABLE | CR_SCHEDULE_ENABLE |
 		  CR_MAC_TX_ENABLE | CR_MAC_RX_ENABLE |
 		  CR_SECURITY_ENABLE | CR_CALTIMER_ENABLE);
-	rtl8xxxu_write16(priv, REG_CR, val16);
+	priv->intfops->write16(priv, REG_CR, val16);
 
 	/*
 	 * BT coexist power on settings. This is identical for 1 and 2
 	 * antenna parts.
 	 */
-	rtl8xxxu_write8(priv, REG_PAD_CTRL1 + 3, 0x20);
+	priv->intfops->write8(priv, REG_PAD_CTRL1 + 3, 0x20);
 
-	val16 = rtl8xxxu_read16(priv, REG_SYS_FUNC);
+	val16 = priv->intfops->read16(priv, REG_SYS_FUNC);
 	val16 |= SYS_FUNC_BBRSTB | SYS_FUNC_BB_GLB_RSTN;
-	rtl8xxxu_write16(priv, REG_SYS_FUNC, val16);
+	priv->intfops->write16(priv, REG_SYS_FUNC, val16);
 
-	rtl8xxxu_write8(priv, REG_BT_CONTROL_8723BU + 1, 0x18);
-	rtl8xxxu_write8(priv, REG_WLAN_ACT_CONTROL_8723B, 0x04);
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
+	priv->intfops->write8(priv, REG_BT_CONTROL_8723BU + 1, 0x18);
+	priv->intfops->write8(priv, REG_WLAN_ACT_CONTROL_8723B, 0x04);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
 	/* Antenna inverse */
-	rtl8xxxu_write8(priv, 0xfe08, 0x01);
+	priv->intfops->write8(priv, 0xfe08, 0x01);
 
-	val16 = rtl8xxxu_read16(priv, REG_PWR_DATA);
+	val16 = priv->intfops->read16(priv, REG_PWR_DATA);
 	val16 |= PWR_DATA_EEPRPAD_RFE_CTRL_EN;
-	rtl8xxxu_write16(priv, REG_PWR_DATA, val16);
+	priv->intfops->write16(priv, REG_PWR_DATA, val16);
 
-	val32 = rtl8xxxu_read32(priv, REG_LEDCFG0);
+	val32 = priv->intfops->read32(priv, REG_LEDCFG0);
 	val32 |= LEDCFG0_DPDT_SELECT;
-	rtl8xxxu_write32(priv, REG_LEDCFG0, val32);
+	priv->intfops->write32(priv, REG_LEDCFG0, val32);
 
-	val8 = rtl8xxxu_read8(priv, REG_PAD_CTRL1);
+	val8 = priv->intfops->read8(priv, REG_PAD_CTRL1);
 	val8 &= ~PAD_CTRL1_SW_DPDT_SEL_DATA;
-	rtl8xxxu_write8(priv, REG_PAD_CTRL1, val8);
+	priv->intfops->write8(priv, REG_PAD_CTRL1, val8);
 exit:
 	return ret;
 }
@@ -1460,36 +1460,36 @@ static void rtl8723bu_power_off(struct rtl8xxxu_priv *priv)
 	/*
 	 * Disable TX report timer
 	 */
-	val8 = rtl8xxxu_read8(priv, REG_TX_REPORT_CTRL);
+	val8 = priv->intfops->read8(priv, REG_TX_REPORT_CTRL);
 	val8 &= ~TX_REPORT_CTRL_TIMER_ENABLE;
-	rtl8xxxu_write8(priv, REG_TX_REPORT_CTRL, val8);
+	priv->intfops->write8(priv, REG_TX_REPORT_CTRL, val8);
 
-	rtl8xxxu_write8(priv, REG_CR, 0x0000);
+	priv->intfops->write8(priv, REG_CR, 0x0000);
 
 	rtl8xxxu_active_to_lps(priv);
 
 	/* Reset Firmware if running in RAM */
-	if (rtl8xxxu_read8(priv, REG_MCU_FW_DL) & MCU_FW_RAM_SEL)
+	if (priv->intfops->read8(priv, REG_MCU_FW_DL) & MCU_FW_RAM_SEL)
 		rtl8xxxu_firmware_self_reset(priv);
 
 	/* Reset MCU */
-	val16 = rtl8xxxu_read16(priv, REG_SYS_FUNC);
+	val16 = priv->intfops->read16(priv, REG_SYS_FUNC);
 	val16 &= ~SYS_FUNC_CPU_ENABLE;
-	rtl8xxxu_write16(priv, REG_SYS_FUNC, val16);
+	priv->intfops->write16(priv, REG_SYS_FUNC, val16);
 
 	/* Reset MCU ready status */
-	rtl8xxxu_write8(priv, REG_MCU_FW_DL, 0x00);
+	priv->intfops->write8(priv, REG_MCU_FW_DL, 0x00);
 
 	rtl8723bu_active_to_emu(priv);
 
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+	val8 = priv->intfops->read8(priv, REG_APS_FSMCO + 1);
 	val8 |= BIT(3); /* APS_FSMCO_HW_SUSPEND */
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 1, val8);
+	priv->intfops->write8(priv, REG_APS_FSMCO + 1, val8);
 
 	/* 0x48[16] = 1 to enable GPIO9 as EXT wakeup */
-	val8 = rtl8xxxu_read8(priv, REG_GPIO_INTM + 2);
+	val8 = priv->intfops->read8(priv, REG_GPIO_INTM + 2);
 	val8 |= BIT(0);
-	rtl8xxxu_write8(priv, REG_GPIO_INTM + 2, val8);
+	priv->intfops->write8(priv, REG_GPIO_INTM + 2, val8);
 }
 
 static void rtl8723b_enable_rf(struct rtl8xxxu_priv *priv)
@@ -1498,25 +1498,25 @@ static void rtl8723b_enable_rf(struct rtl8xxxu_priv *priv)
 	u32 val32;
 	u8 val8;
 
-	val32 = rtl8xxxu_read32(priv, REG_RX_WAIT_CCA);
+	val32 = priv->intfops->read32(priv, REG_RX_WAIT_CCA);
 	val32 |= (BIT(22) | BIT(23));
-	rtl8xxxu_write32(priv, REG_RX_WAIT_CCA, val32);
+	priv->intfops->write32(priv, REG_RX_WAIT_CCA, val32);
 
 	/*
 	 * No indication anywhere as to what 0x0790 does. The 2 antenna
 	 * vendor code preserves bits 6-7 here.
 	 */
-	rtl8xxxu_write8(priv, 0x0790, 0x05);
+	priv->intfops->write8(priv, 0x0790, 0x05);
 	/*
 	 * 0x0778 seems to be related to enabling the number of antennas
 	 * In the vendor driver halbtc8723b2ant_InitHwConfig() sets it
 	 * to 0x03, while halbtc8723b1ant_InitHwConfig() sets it to 0x01
 	 */
-	rtl8xxxu_write8(priv, 0x0778, 0x01);
+	priv->intfops->write8(priv, 0x0778, 0x01);
 
-	val8 = rtl8xxxu_read8(priv, REG_GPIO_MUXCFG);
+	val8 = priv->intfops->read8(priv, REG_GPIO_MUXCFG);
 	val8 |= BIT(5);
-	rtl8xxxu_write8(priv, REG_GPIO_MUXCFG, val8);
+	priv->intfops->write8(priv, REG_GPIO_MUXCFG, val8);
 
 	rtl8xxxu_write_rfreg(priv, RF_A, RF6052_REG_IQADJ_G1, 0x780);
 
@@ -1533,41 +1533,41 @@ static void rtl8723b_enable_rf(struct rtl8xxxu_priv *priv)
 	/*
 	 * WLAN action by PTA
 	 */
-	rtl8xxxu_write8(priv, REG_WLAN_ACT_CONTROL_8723B, 0x04);
+	priv->intfops->write8(priv, REG_WLAN_ACT_CONTROL_8723B, 0x04);
 
 	/*
 	 * BT select S0/S1 controlled by WiFi
 	 */
-	val8 = rtl8xxxu_read8(priv, 0x0067);
+	val8 = priv->intfops->read8(priv, 0x0067);
 	val8 |= BIT(5);
-	rtl8xxxu_write8(priv, 0x0067, val8);
+	priv->intfops->write8(priv, 0x0067, val8);
 
-	val32 = rtl8xxxu_read32(priv, REG_PWR_DATA);
+	val32 = priv->intfops->read32(priv, REG_PWR_DATA);
 	val32 |= PWR_DATA_EEPRPAD_RFE_CTRL_EN;
-	rtl8xxxu_write32(priv, REG_PWR_DATA, val32);
+	priv->intfops->write32(priv, REG_PWR_DATA, val32);
 
 	/*
 	 * Bits 6/7 are marked in/out ... but for what?
 	 */
-	rtl8xxxu_write8(priv, 0x0974, 0xff);
+	priv->intfops->write8(priv, 0x0974, 0xff);
 
-	val32 = rtl8xxxu_read32(priv, REG_RFE_BUFFER);
+	val32 = priv->intfops->read32(priv, REG_RFE_BUFFER);
 	val32 |= (BIT(0) | BIT(1));
-	rtl8xxxu_write32(priv, REG_RFE_BUFFER, val32);
+	priv->intfops->write32(priv, REG_RFE_BUFFER, val32);
 
-	rtl8xxxu_write8(priv, REG_RFE_CTRL_ANTA_SRC, 0x77);
+	priv->intfops->write8(priv, REG_RFE_CTRL_ANTA_SRC, 0x77);
 
-	val32 = rtl8xxxu_read32(priv, REG_LEDCFG0);
+	val32 = priv->intfops->read32(priv, REG_LEDCFG0);
 	val32 &= ~BIT(24);
 	val32 |= BIT(23);
-	rtl8xxxu_write32(priv, REG_LEDCFG0, val32);
+	priv->intfops->write32(priv, REG_LEDCFG0, val32);
 
 	/*
 	 * Fix external switch Main->S1, Aux->S0
 	 */
-	val8 = rtl8xxxu_read8(priv, REG_PAD_CTRL1);
+	val8 = priv->intfops->read8(priv, REG_PAD_CTRL1);
 	val8 &= ~BIT(0);
-	rtl8xxxu_write8(priv, REG_PAD_CTRL1, val8);
+	priv->intfops->write8(priv, REG_PAD_CTRL1, val8);
 
 	memset(&h2c, 0, sizeof(struct h2c_cmd));
 	h2c.ant_sel_rsv.cmd = H2C_8723B_ANT_SEL_RSV;
@@ -1578,7 +1578,7 @@ static void rtl8723b_enable_rf(struct rtl8xxxu_priv *priv)
 	/*
 	 * 0x280, 0x00, 0x200, 0x80 - not clear
 	 */
-	rtl8xxxu_write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
+	priv->intfops->write32(priv, REG_S0S1_PATH_SWITCH, 0x00);
 
 	/*
 	 * Software control, antenna at WiFi side
@@ -1587,10 +1587,10 @@ static void rtl8723b_enable_rf(struct rtl8xxxu_priv *priv)
 	rtl8723bu_set_ps_tdma(priv, 0x08, 0x00, 0x00, 0x00, 0x00);
 #endif
 
-	rtl8xxxu_write32(priv, REG_BT_COEX_TABLE1, 0x55555555);
-	rtl8xxxu_write32(priv, REG_BT_COEX_TABLE2, 0x55555555);
-	rtl8xxxu_write32(priv, REG_BT_COEX_TABLE3, 0x00ffffff);
-	rtl8xxxu_write8(priv, REG_BT_COEX_TABLE4, 0x03);
+	priv->intfops->write32(priv, REG_BT_COEX_TABLE1, 0x55555555);
+	priv->intfops->write32(priv, REG_BT_COEX_TABLE2, 0x55555555);
+	priv->intfops->write32(priv, REG_BT_COEX_TABLE3, 0x00ffffff);
+	priv->intfops->write8(priv, REG_BT_COEX_TABLE4, 0x03);
 
 	memset(&h2c, 0, sizeof(struct h2c_cmd));
 	h2c.bt_info.cmd = H2C_8723B_BT_INFO;
@@ -1611,15 +1611,15 @@ static void rtl8723bu_init_aggregation(struct rtl8xxxu_priv *priv)
 	/*
 	 * For now simply disable RX aggregation
 	 */
-	agg_ctrl = rtl8xxxu_read8(priv, REG_TRXDMA_CTRL);
+	agg_ctrl = priv->intfops->read8(priv, REG_TRXDMA_CTRL);
 	agg_ctrl &= ~TRXDMA_CTRL_RXDMA_AGG_EN;
 
-	agg_rx = rtl8xxxu_read32(priv, REG_RXDMA_AGG_PG_TH);
+	agg_rx = priv->intfops->read32(priv, REG_RXDMA_AGG_PG_TH);
 	agg_rx &= ~RXDMA_USB_AGG_ENABLE;
 	agg_rx &= ~0xff0f;
 
-	rtl8xxxu_write8(priv, REG_TRXDMA_CTRL, agg_ctrl);
-	rtl8xxxu_write32(priv, REG_RXDMA_AGG_PG_TH, agg_rx);
+	priv->intfops->write8(priv, REG_TRXDMA_CTRL, agg_ctrl);
+	priv->intfops->write32(priv, REG_RXDMA_AGG_PG_TH, agg_rx);
 }
 
 static void rtl8723bu_init_statistics(struct rtl8xxxu_priv *priv)
@@ -1627,22 +1627,22 @@ static void rtl8723bu_init_statistics(struct rtl8xxxu_priv *priv)
 	u32 val32;
 
 	/* Time duration for NHM unit: 4us, 0x2710=40ms */
-	rtl8xxxu_write16(priv, REG_NHM_TIMER_8723B + 2, 0x2710);
-	rtl8xxxu_write16(priv, REG_NHM_TH9_TH10_8723B + 2, 0xffff);
-	rtl8xxxu_write32(priv, REG_NHM_TH3_TO_TH0_8723B, 0xffffff52);
-	rtl8xxxu_write32(priv, REG_NHM_TH7_TO_TH4_8723B, 0xffffffff);
+	priv->intfops->write16(priv, REG_NHM_TIMER_8723B + 2, 0x2710);
+	priv->intfops->write16(priv, REG_NHM_TH9_TH10_8723B + 2, 0xffff);
+	priv->intfops->write32(priv, REG_NHM_TH3_TO_TH0_8723B, 0xffffff52);
+	priv->intfops->write32(priv, REG_NHM_TH7_TO_TH4_8723B, 0xffffffff);
 	/* TH8 */
-	val32 = rtl8xxxu_read32(priv, REG_FPGA0_IQK);
+	val32 = priv->intfops->read32(priv, REG_FPGA0_IQK);
 	val32 |= 0xff;
-	rtl8xxxu_write32(priv, REG_FPGA0_IQK, val32);
+	priv->intfops->write32(priv, REG_FPGA0_IQK, val32);
 	/* Enable CCK */
-	val32 = rtl8xxxu_read32(priv, REG_NHM_TH9_TH10_8723B);
+	val32 = priv->intfops->read32(priv, REG_NHM_TH9_TH10_8723B);
 	val32 |= BIT(8) | BIT(9) | BIT(10);
-	rtl8xxxu_write32(priv, REG_NHM_TH9_TH10_8723B, val32);
+	priv->intfops->write32(priv, REG_NHM_TH9_TH10_8723B, val32);
 	/* Max power amongst all RX antennas */
-	val32 = rtl8xxxu_read32(priv, REG_OFDM0_FA_RSTC);
+	val32 = priv->intfops->read32(priv, REG_OFDM0_FA_RSTC);
 	val32 |= BIT(7);
-	rtl8xxxu_write32(priv, REG_OFDM0_FA_RSTC, val32);
+	priv->intfops->write32(priv, REG_OFDM0_FA_RSTC, val32);
 }
 
 struct rtl8xxxu_fileops rtl8723bu_fops = {

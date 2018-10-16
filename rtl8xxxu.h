@@ -15,6 +15,8 @@
 
 #include <asm/byteorder.h>
 
+#define DRIVER_NAME "rtl8xxxu"
+
 #define RTL8XXXU_DEBUG_REG_WRITE	0x01
 #define RTL8XXXU_DEBUG_REG_READ		0x02
 #define RTL8XXXU_DEBUG_RFREG_WRITE	0x04
@@ -1376,6 +1378,7 @@ struct rtl8xxxu_intfops {
 
 
 extern int rtl8xxxu_debug;
+extern bool rtl8xxxu_ht40_2g;
 
 extern struct rtl8xxxu_reg8val rtl8xxxu_gen1_mac_init_table[];
 extern const u32 rtl8xxxu_iqk_phy_iq_bb_reg[];
@@ -1452,9 +1455,17 @@ void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 			     bool short_preamble, bool ampdu_enable,
 			     u32 rts_rate);
 
+void rtl8xxxu_rx_urb_work(struct work_struct *work);
+int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv);
+int rtl8xxxu_init_device(struct ieee80211_hw *hw);
+int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv);
+void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv);
+
 extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;
 extern struct rtl8xxxu_fileops rtl8723au_fops;
 extern struct rtl8xxxu_fileops rtl8723bu_fops;
 
-extern struct rtl8xxxu_intfops rtl8xxxu_usb_intfops;
+extern const struct ieee80211_ops rtl8xxxu_ops;
+extern struct ieee80211_supported_band rtl8xxxu_supported_band;
+
