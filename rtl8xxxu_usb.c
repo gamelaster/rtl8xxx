@@ -277,6 +277,50 @@ exit:
 	return ret;
 }
 
+void rtl8xxxu_gen1_usb_quirks(struct rtl8xxxu_priv *priv)
+{
+	/* Fix USB interface interference issue */
+	priv->intfops->write8(priv, 0xfe40, 0xe0);
+	priv->intfops->write8(priv, 0xfe41, 0x8d);
+	priv->intfops->write8(priv, 0xfe42, 0x80);
+	/*
+	 * This sets TXDMA_OFFSET_DROP_DATA_EN (bit 9) as well as bits
+	 * 8 and 5, for which I have found no documentation.
+	 */
+	priv->intfops->write32(priv, REG_TXDMA_OFFSET_CHK, 0xfd0320);
+
+	/*
+	 * Solve too many protocol error on USB bus.
+	 * Can't do this for 8188/8192 UMC A cut parts
+	 */
+	if (!(!priv->chip_cut && priv->vendor_umc)) {
+		priv->intfops->write8(priv, 0xfe40, 0xe6);
+		priv->intfops->write8(priv, 0xfe41, 0x94);
+		priv->intfops->write8(priv, 0xfe42, 0x80);
+
+		priv->intfops->write8(priv, 0xfe40, 0xe0);
+		priv->intfops->write8(priv, 0xfe41, 0x19);
+		priv->intfops->write8(priv, 0xfe42, 0x80);
+
+		priv->intfops->write8(priv, 0xfe40, 0xe5);
+		priv->intfops->write8(priv, 0xfe41, 0x91);
+		priv->intfops->write8(priv, 0xfe42, 0x80);
+
+		priv->intfops->write8(priv, 0xfe40, 0xe2);
+		priv->intfops->write8(priv, 0xfe41, 0x81);
+		priv->intfops->write8(priv, 0xfe42, 0x80);
+	}
+}
+
+void rtl8xxxu_gen2_usb_quirks(struct rtl8xxxu_priv *priv)
+{
+	u32 val32;
+
+	val32 = priv->intfops->read32(priv, REG_TXDMA_OFFSET_CHK);
+	val32 |= TXDMA_OFFSET_DROP_DATA_EN;
+	priv->intfops->write32(priv, REG_TXDMA_OFFSET_CHK, val32);
+}
+
 static int rtl8xxxu_probe(struct usb_interface *interface,
 			  const struct usb_device_id *id)
 {
@@ -458,7 +502,7 @@ exit:
 	return ret;
 }
 
-static void rtl8xxxu_disconnect(struct usb_interface *interface)
+static void rtl8xxxu_usb_disconnect(struct usb_interface *interface)
 {
 	struct rtl8xxxu_priv *priv;
 	struct ieee80211_hw *hw;
@@ -527,6 +571,9 @@ static const struct usb_device_id dev_table[] = {
 /* Tested by Stefano Bravi */
 {USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x3308, 0xff, 0xff, 0xff),
 	.driver_info = (unsigned long)&rtl8192cu_fops},
+/* Tested by Marek Kraus - Edimax EW-7611ULB */
+{USB_DEVICE_AND_INTERFACE_INFO(0x7392, 0xa611, 0xff, 0xff, 0xff),
+	.driver_info = (unsigned long)&rtl8723bu_fops},
 /* Currently untested 8188 series devices */
 {USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x018a, 0xff, 0xff, 0xff),
 	.driver_info = (unsigned long)&rtl8192cu_fops},
@@ -669,13 +716,13 @@ static const struct usb_device_id dev_table[] = {
 static struct usb_driver rtl8xxxu_usb_driver = {
 	.name = DRIVER_NAME,
 	.probe = rtl8xxxu_probe,
-	.disconnect = rtl8xxxu_disconnect,
+	.disconnect = rtl8xxxu_usb_disconnect,
 	.id_table = dev_table,
 	.no_dynamic_id = 1,
 	.disable_hub_initiated_lpm = 1,
 };
 
-static int __init rtl8xxxu_usb_module_init(void)
+int rtl8xxxu_usb_register(void)
 {
 	int res;
 
@@ -683,15 +730,12 @@ static int __init rtl8xxxu_usb_module_init(void)
 	if (res < 0)
 		pr_err(DRIVER_NAME ": usb_register() failed (%i)\n", res);
 
-	return 0;
+	return res;
 }
 
-static void __exit rtl8xxxu_usb_module_exit(void)
+void rtl8xxxu_usb_exit(void)
 {
 	usb_deregister(&rtl8xxxu_usb_driver);
 }
 
 MODULE_DEVICE_TABLE(usb, dev_table);
-
-module_init(rtl8xxxu_usb_module_init);
-module_exit(rtl8xxxu_usb_module_exit);

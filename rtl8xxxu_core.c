@@ -3569,50 +3569,6 @@ int rtl8xxxu_flush_fifo(struct rtl8xxxu_priv *priv)
 	return retval;
 }
 
-void rtl8xxxu_gen1_usb_quirks(struct rtl8xxxu_priv *priv)
-{
-	/* Fix USB interface interference issue */
-	priv->intfops->write8(priv, 0xfe40, 0xe0);
-	priv->intfops->write8(priv, 0xfe41, 0x8d);
-	priv->intfops->write8(priv, 0xfe42, 0x80);
-	/*
-	 * This sets TXDMA_OFFSET_DROP_DATA_EN (bit 9) as well as bits
-	 * 8 and 5, for which I have found no documentation.
-	 */
-	priv->intfops->write32(priv, REG_TXDMA_OFFSET_CHK, 0xfd0320);
-
-	/*
-	 * Solve too many protocol error on USB bus.
-	 * Can't do this for 8188/8192 UMC A cut parts
-	 */
-	if (!(!priv->chip_cut && priv->vendor_umc)) {
-		priv->intfops->write8(priv, 0xfe40, 0xe6);
-		priv->intfops->write8(priv, 0xfe41, 0x94);
-		priv->intfops->write8(priv, 0xfe42, 0x80);
-
-		priv->intfops->write8(priv, 0xfe40, 0xe0);
-		priv->intfops->write8(priv, 0xfe41, 0x19);
-		priv->intfops->write8(priv, 0xfe42, 0x80);
-
-		priv->intfops->write8(priv, 0xfe40, 0xe5);
-		priv->intfops->write8(priv, 0xfe41, 0x91);
-		priv->intfops->write8(priv, 0xfe42, 0x80);
-
-		priv->intfops->write8(priv, 0xfe40, 0xe2);
-		priv->intfops->write8(priv, 0xfe41, 0x81);
-		priv->intfops->write8(priv, 0xfe42, 0x80);
-	}
-}
-
-void rtl8xxxu_gen2_usb_quirks(struct rtl8xxxu_priv *priv)
-{
-	u32 val32;
-
-	val32 = priv->intfops->read32(priv, REG_TXDMA_OFFSET_CHK);
-	val32 |= TXDMA_OFFSET_DROP_DATA_EN;
-	priv->intfops->write32(priv, REG_TXDMA_OFFSET_CHK, val32);
-}
-
 void rtl8xxxu_power_off(struct rtl8xxxu_priv *priv)
 {
 	u8 val8;
@@ -5740,3 +5696,19 @@ const struct ieee80211_ops rtl8xxxu_ops = {
 	.set_key = rtl8xxxu_set_key,
 	.ampdu_action = rtl8xxxu_ampdu_action,
 };
+
+static int __init rtl8xxxu_module_init(void)
+{
+	int res;
+	res = rtl8xxxu_usb_register();
+
+	return res;
+}
+
+static void __exit rtl8xxxu_module_exit(void)
+{
+	rtl8xxxu_usb_exit();
+}
+
+module_init(rtl8xxxu_module_init);
+module_exit(rtl8xxxu_module_exit);

@@ -1461,6 +1461,9 @@ int rtl8xxxu_init_device(struct ieee80211_hw *hw);
 int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv);
 void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv);
 
+int rtl8xxxu_usb_register(void);
+void rtl8xxxu_usb_exit(void);
+
 extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;
 extern struct rtl8xxxu_fileops rtl8723au_fops;
