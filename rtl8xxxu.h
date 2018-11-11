@@ -15,8 +15,6 @@
 
 #include <asm/byteorder.h>
 
-#define DRIVER_NAME "rtl8xxxu"
-
 #define RTL8XXXU_DEBUG_REG_WRITE	0x01
 #define RTL8XXXU_DEBUG_REG_READ		0x02
 #define RTL8XXXU_DEBUG_RFREG_WRITE	0x04
@@ -1201,7 +1199,6 @@ struct rtl8xxxu_priv {
 	struct ieee80211_hw *hw;
 	struct usb_device *udev;
 	struct rtl8xxxu_fileops *fops;
-	struct rtl8xxxu_intfops *intfops;
 
 	spinlock_t tx_urb_lock;
 	struct list_head tx_urb_free_list;
@@ -1366,22 +1363,16 @@ struct rtl8xxxu_fileops {
 	u8 page_num_norm;
 };
 
-struct rtl8xxxu_intfops {
-	u8 (*read8) (struct rtl8xxxu_priv *priv, u16 addr);
-	u16 (*read16) (struct rtl8xxxu_priv *priv, u16 addr);
-	u32 (*read32) (struct rtl8xxxu_priv *priv, u16 addr);
-	int (*write8) (struct rtl8xxxu_priv *priv, u16 addr, u8 val);
-	int (*write16) (struct rtl8xxxu_priv *priv, u16 addr, u16 val);
-	int (*write32) (struct rtl8xxxu_priv *priv, u16 addr, u32 val);
-	int (*writeN) (struct rtl8xxxu_priv *priv, u16 addr, u8 *buf, u16 len);
-};
-
-
 extern int rtl8xxxu_debug;
-extern bool rtl8xxxu_ht40_2g;
 
 extern struct rtl8xxxu_reg8val rtl8xxxu_gen1_mac_init_table[];
 extern const u32 rtl8xxxu_iqk_phy_iq_bb_reg[];
+u8 rtl8xxxu_read8(struct rtl8xxxu_priv *priv, u16 addr);
+u16 rtl8xxxu_read16(struct rtl8xxxu_priv *priv, u16 addr);
+u32 rtl8xxxu_read32(struct rtl8xxxu_priv *priv, u16 addr);
+int rtl8xxxu_write8(struct rtl8xxxu_priv *priv, u16 addr, u8 val);
+int rtl8xxxu_write16(struct rtl8xxxu_priv *priv, u16 addr, u16 val);
+int rtl8xxxu_write32(struct rtl8xxxu_priv *priv, u16 addr, u32 val);
 u32 rtl8xxxu_read_rfreg(struct rtl8xxxu_priv *priv,
 			enum rtl8xxxu_rfpath path, u8 reg);
 int rtl8xxxu_write_rfreg(struct rtl8xxxu_priv *priv,
@@ -1455,20 +1446,7 @@ void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 			     bool short_preamble, bool ampdu_enable,
 			     u32 rts_rate);
 
-void rtl8xxxu_rx_urb_work(struct work_struct *work);
-int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv);
-int rtl8xxxu_init_device(struct ieee80211_hw *hw);
-int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv);
-void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv);
-
-int rtl8xxxu_usb_register(void);
-void rtl8xxxu_usb_exit(void);
-
 extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;
 extern struct rtl8xxxu_fileops rtl8723au_fops;
 extern struct rtl8xxxu_fileops rtl8723bu_fops;
-
-extern const struct ieee80211_ops rtl8xxxu_ops;
-extern struct ieee80211_supported_band rtl8xxxu_supported_band;
-
