@@ -219,10 +219,10 @@ static int rtl8723au_init_phy_rf(struct rtl8xxxu_priv *priv)
 	ret = rtl8xxxu_init_phy_rf(priv, rtl8723au_radioa_1t_init_table, RF_A);
 
 	/* Reduce 80M spur */
-	rtl8xxxu_write32(priv, REG_AFE_XTAL_CTRL, 0x0381808d);
-	rtl8xxxu_write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff83);
-	rtl8xxxu_write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff82);
-	rtl8xxxu_write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff83);
+	priv->iops->write32(priv, REG_AFE_XTAL_CTRL, 0x0381808d);
+	priv->iops->write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff83);
+	priv->iops->write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff82);
+	priv->iops->write32(priv, REG_AFE_PLL_CTRL, 0xf0ffff83);
 
 	return ret;
 }
@@ -234,30 +234,30 @@ static int rtl8723a_emu_to_active(struct rtl8xxxu_priv *priv)
 	int count, ret = 0;
 
 	/* 0x20[0] = 1 enable LDOA12 MACRO block for all interface*/
-	val8 = rtl8xxxu_read8(priv, REG_LDOA15_CTRL);
+	val8 = priv->iops->read8(priv, REG_LDOA15_CTRL);
 	val8 |= LDOA15_ENABLE;
-	rtl8xxxu_write8(priv, REG_LDOA15_CTRL, val8);
+	priv->iops->write8(priv, REG_LDOA15_CTRL, val8);
 
 	/* 0x67[0] = 0 to disable BT_GPS_SEL pins*/
-	val8 = rtl8xxxu_read8(priv, 0x0067);
+	val8 = priv->iops->read8(priv, 0x0067);
 	val8 &= ~BIT(4);
-	rtl8xxxu_write8(priv, 0x0067, val8);
+	priv->iops->write8(priv, 0x0067, val8);
 
 	mdelay(1);
 
 	/* 0x00[5] = 0 release analog Ips to digital, 1:isolation */
-	val8 = rtl8xxxu_read8(priv, REG_SYS_ISO_CTRL);
+	val8 = priv->iops->read8(priv, REG_SYS_ISO_CTRL);
 	val8 &= ~SYS_ISO_ANALOG_IPS;
-	rtl8xxxu_write8(priv, REG_SYS_ISO_CTRL, val8);
+	priv->iops->write8(priv, REG_SYS_ISO_CTRL, val8);
 
 	/* disable SW LPS 0x04[10]= 0 */
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+	val8 = priv->iops->read8(priv, REG_APS_FSMCO + 1);
 	val8 &= ~BIT(2);
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 1, val8);
+	priv->iops->write8(priv, REG_APS_FSMCO + 1, val8);
 
 	/* wait till 0x04[17] = 1 power ready*/
 	for (count = RTL8XXXU_MAX_REG_POLL; count; count--) {
-		val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+		val32 = priv->iops->read32(priv, REG_APS_FSMCO);
 		if (val32 & BIT(17))
 			break;
 
@@ -272,27 +272,27 @@ static int rtl8723a_emu_to_active(struct rtl8xxxu_priv *priv)
 	/* We should be able to optimize the following three entries into one */
 
 	/* release WLON reset 0x04[16]= 1*/
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 2);
+	val8 = priv->iops->read8(priv, REG_APS_FSMCO + 2);
 	val8 |= BIT(0);
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 2, val8);
+	priv->iops->write8(priv, REG_APS_FSMCO + 2, val8);
 
 	/* disable HWPDN 0x04[15]= 0*/
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+	val8 = priv->iops->read8(priv, REG_APS_FSMCO + 1);
 	val8 &= ~BIT(7);
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 1, val8);
+	priv->iops->write8(priv, REG_APS_FSMCO + 1, val8);
 
 	/* disable WL suspend*/
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 1);
+	val8 = priv->iops->read8(priv, REG_APS_FSMCO + 1);
 	val8 &= ~(BIT(3) | BIT(4));
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 1, val8);
+	priv->iops->write8(priv, REG_APS_FSMCO + 1, val8);
 
 	/* set, then poll until 0 */
-	val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+	val32 = priv->iops->read32(priv, REG_APS_FSMCO);
 	val32 |= APS_FSMCO_MAC_ENABLE;
-	rtl8xxxu_write32(priv, REG_APS_FSMCO, val32);
+	priv->iops->write32(priv, REG_APS_FSMCO, val32);
 
 	for (count = RTL8XXXU_MAX_REG_POLL; count; count--) {
-		val32 = rtl8xxxu_read32(priv, REG_APS_FSMCO);
+		val32 = priv->iops->read32(priv, REG_APS_FSMCO);
 		if ((val32 & APS_FSMCO_MAC_ENABLE) == 0) {
 			ret = 0;
 			break;
@@ -310,10 +310,10 @@ static int rtl8723a_emu_to_active(struct rtl8xxxu_priv *priv)
 	 * Note: Vendor driver actually clears this bit, despite the
 	 * documentation claims it's being set!
 	 */
-	val8 = rtl8xxxu_read8(priv, REG_LEDCFG2);
+	val8 = priv->iops->read8(priv, REG_LEDCFG2);
 	val8 |= LEDCFG2_DPDT_SELECT;
 	val8 &= ~LEDCFG2_DPDT_SELECT;
-	rtl8xxxu_write8(priv, REG_LEDCFG2, val8);
+	priv->iops->write8(priv, REG_LEDCFG2, val8);
 
 exit:
 	return ret;
@@ -329,7 +329,7 @@ static int rtl8723au_power_on(struct rtl8xxxu_priv *priv)
 	/*
 	 * RSV_CTRL 0x001C[7:0] = 0x00, unlock ISO/CLK/Power control register
 	 */
-	rtl8xxxu_write8(priv, REG_RSV_CTRL, 0x0);
+	priv->iops->write8(priv, REG_RSV_CTRL, 0x0);
 
 	rtl8xxxu_disabled_to_emu(priv);
 
@@ -340,27 +340,27 @@ static int rtl8723au_power_on(struct rtl8xxxu_priv *priv)
 	/*
 	 * 0x0004[19] = 1, reset 8051
 	 */
-	val8 = rtl8xxxu_read8(priv, REG_APS_FSMCO + 2);
+	val8 = priv->iops->read8(priv, REG_APS_FSMCO + 2);
 	val8 |= BIT(3);
-	rtl8xxxu_write8(priv, REG_APS_FSMCO + 2, val8);
+	priv->iops->write8(priv, REG_APS_FSMCO + 2, val8);
 
 	/*
 	 * Enable MAC DMA/WMAC/SCHEDULE/SEC block
 	 * Set CR bit10 to enable 32k calibration.
 	 */
-	val16 = rtl8xxxu_read16(priv, REG_CR);
+	val16 = priv->iops->read16(priv, REG_CR);
 	val16 |= (CR_HCI_TXDMA_ENABLE | CR_HCI_RXDMA_ENABLE |
 		  CR_TXDMA_ENABLE | CR_RXDMA_ENABLE |
 		  CR_PROTOCOL_ENABLE | CR_SCHEDULE_ENABLE |
 		  CR_MAC_TX_ENABLE | CR_MAC_RX_ENABLE |
 		  CR_SECURITY_ENABLE | CR_CALTIMER_ENABLE);
-	rtl8xxxu_write16(priv, REG_CR, val16);
+	priv->iops->write16(priv, REG_CR, val16);
 
 	/* For EFuse PG */
-	val32 = rtl8xxxu_read32(priv, REG_EFUSE_CTRL);
+	val32 = priv->iops->read32(priv, REG_EFUSE_CTRL);
 	val32 &= ~(BIT(28) | BIT(29) | BIT(30));
 	val32 |= (0x06 << 28);
-	rtl8xxxu_write32(priv, REG_EFUSE_CTRL, val32);
+	priv->iops->write32(priv, REG_EFUSE_CTRL, val32);
 exit:
 	return ret;
 }
