@@ -15,6 +15,8 @@
 
 #include <asm/byteorder.h>
 
+#define DRIVER_NAME "rtl8xxxu"
+
 #define RTL8XXXU_DEBUG_REG_WRITE	0x01
 #define RTL8XXXU_DEBUG_REG_READ		0x02
 #define RTL8XXXU_DEBUG_RFREG_WRITE	0x04
@@ -1193,6 +1195,21 @@ struct rtl8723bu_c2h {
 	};
 };
 
+struct rtl8xxxu_queues {
+	u16 hiq;
+	u16 mgq;
+	u16 bkq;
+	u16 beq;
+	u16 viq;
+	u16 voq;
+	int hip;
+	int mgp;
+	int bkp;
+	int bep;
+	int vip;
+	int vop;
+};
+
 struct rtl8xxxu_fileops;
 
 struct rtl8xxxu_priv {
@@ -1372,9 +1389,20 @@ struct rtl8xxxu_intops {
 	int (*write16) (struct rtl8xxxu_priv *priv, u16 addr, u16 val);
 	int (*write32) (struct rtl8xxxu_priv *priv, u16 addr, u32 val);
 	int (*writeN) (struct rtl8xxxu_priv *priv, u16 addr, u8 *buf, u16 len);
+	void (*configure_beacon_queue) (struct rtl8xxxu_priv *priv, struct rtl8xxxu_queues queues);
+	int (*tx) (struct rtl8xxxu_priv *priv, struct sk_buff *skb, u32 queue);
+	int (*start) (struct rtl8xxxu_priv *priv, int *ret);
+	void (*stop) (struct rtl8xxxu_priv *priv);
 };
 
 extern int rtl8xxxu_debug;
+extern bool rtl8xxxu_ht40_2g;
+extern bool rtl8xxxu_dma_aggregation;
+extern int rtl8xxxu_dma_agg_timeout;
+extern int rtl8xxxu_dma_agg_pages;
+extern const struct ieee80211_ops rtl8xxxu_ops; // TODO: Remove when rtl8xxxu_usb_probe will be cleaned
+extern struct ieee80211_supported_band rtl8xxxu_supported_band;
+
 
 extern struct rtl8xxxu_reg8val rtl8xxxu_gen1_mac_init_table[];
 extern const u32 rtl8xxxu_iqk_phy_iq_bb_reg[];
@@ -1450,6 +1478,12 @@ void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 			     struct rtl8xxxu_txdesc32 *tx_desc32, bool sgi,
 			     bool short_preamble, bool ampdu_enable,
 			     u32 rts_rate);
+
+int rtl8xxxu_usb_register(void);
+void rtl8xxxu_usb_deregister(void);
+int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv);
+int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv);
+void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv);
 
 extern struct rtl8xxxu_fileops rtl8192cu_fops;
 extern struct rtl8xxxu_fileops rtl8192eu_fops;

@@ -40,26 +40,15 @@
 #include "rtl8xxxu.h"
 #include "rtl8xxxu_regs.h"
 
-#define DRIVER_NAME "rtl8xxxu"
-
 int rtl8xxxu_debug = RTL8XXXU_DEBUG_EFUSE;
-static bool rtl8xxxu_ht40_2g;
-static bool rtl8xxxu_dma_aggregation;
-static int rtl8xxxu_dma_agg_timeout = -1;
-static int rtl8xxxu_dma_agg_pages = -1;
+bool rtl8xxxu_ht40_2g;
+bool rtl8xxxu_dma_aggregation;
+int rtl8xxxu_dma_agg_timeout = -1;
+int rtl8xxxu_dma_agg_pages = -1;
 
 MODULE_AUTHOR("Jes Sorensen <Jes.Sorensen@gmail.com>");
 MODULE_DESCRIPTION("RTL8XXXu USB mac80211 Wireless LAN Driver");
 MODULE_LICENSE("GPL");
-MODULE_FIRMWARE("rtlwifi/rtl8723aufw_A.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8723aufw_B.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8723aufw_B_NoBT.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8192cufw_A.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8192cufw_B.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8192cufw_TMSC.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8192eu_nic.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8723bu_nic.bin");
-MODULE_FIRMWARE("rtlwifi/rtl8723bu_bt.bin");
 
 module_param_named(debug, rtl8xxxu_debug, int, 0600);
 MODULE_PARM_DESC(debug, "Set debug mask");
@@ -71,16 +60,6 @@ module_param_named(dma_agg_timeout, rtl8xxxu_dma_agg_timeout, int, 0600);
 MODULE_PARM_DESC(dma_agg_timeout, "Set DMA aggregation timeout (range 1-127)");
 module_param_named(dma_agg_pages, rtl8xxxu_dma_agg_pages, int, 0600);
 MODULE_PARM_DESC(dma_agg_pages, "Set DMA aggregation pages (range 1-127, 0 to disable)");
-
-#define USB_VENDOR_ID_REALTEK		0x0bda
-#define RTL8XXXU_RX_URBS		32
-#define RTL8XXXU_RX_URB_PENDING_WATER	8
-#define RTL8XXXU_TX_URBS		64
-#define RTL8XXXU_TX_URB_LOW_WATER	25
-#define RTL8XXXU_TX_URB_HIGH_WATER	32
-
-static int rtl8xxxu_submit_rx_urb(struct rtl8xxxu_priv *priv,
-				  struct rtl8xxxu_rx_urb *rx_urb);
 
 static struct ieee80211_rate rtl8xxxu_rates[] = {
 	{ .bitrate = 10, .hw_value = DESC_RATE_1M, .flags = 0 },
@@ -128,7 +107,7 @@ static struct ieee80211_channel rtl8xxxu_channels_2g[] = {
 	  .hw_value = 14, .max_power = 30 }
 };
 
-static struct ieee80211_supported_band rtl8xxxu_supported_band = {
+struct ieee80211_supported_band rtl8xxxu_supported_band = {
 	.channels = rtl8xxxu_channels_2g,
 	.n_channels = ARRAY_SIZE(rtl8xxxu_channels_2g),
 	.bitrates = rtl8xxxu_rates,
@@ -1419,7 +1398,7 @@ rtl8xxxu_set_spec_sifs(struct rtl8xxxu_priv *priv, u16 cck, u16 ofdm)
 	priv->iops->write16(priv, REG_SPEC_SIFS, val16);
 }
 
-static void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv)
+void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv)
 {
 	struct device *dev = &priv->udev->dev;
 	char *cut;
@@ -1453,7 +1432,7 @@ static void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv)
 	dev_info(dev, "RTL%s MAC: %pM\n", priv->chip_name, priv->mac_addr);
 }
 
-static int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
+int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 {
 	struct device *dev = &priv->udev->dev;
 	u32 val32, bonding;
@@ -1641,7 +1620,7 @@ rtl8xxxu_read_efuse8(struct rtl8xxxu_priv *priv, u16 offset, u8 *data)
 	return 0;
 }
 
-static int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv)
+int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv)
 {
 	struct device *dev = &priv->udev->dev;
 	int i, ret = 0;
@@ -2376,8 +2355,7 @@ int rtl8xxxu_auto_llt_table(struct rtl8xxxu_priv *priv)
 static int rtl8xxxu_init_queue_priority(struct rtl8xxxu_priv *priv)
 {
 	u16 val16, hi, lo;
-	u16 hiq, mgq, bkq, beq, viq, voq;
-	int hip, mgp, bkp, bep, vip, vop;
+	struct rtl8xxxu_queues queues;
 	int ret = 0;
 
 	switch (priv->ep_tx_count) {
@@ -2393,19 +2371,19 @@ static int rtl8xxxu_init_queue_priority(struct rtl8xxxu_priv *priv)
 			ret = -EINVAL;
 		}
 
-		hiq = hi;
-		mgq = hi;
-		bkq = hi;
-		beq = hi;
-		viq = hi;
-		voq = hi;
+		queues.hiq = hi;
+		queues.mgq = hi;
+		queues.bkq = hi;
+		queues.beq = hi;
+		queues.viq = hi;
+		queues.voq = hi;
 
-		hip = 0;
-		mgp = 0;
-		bkp = 0;
-		bep = 0;
-		vip = 0;
-		vop = 0;
+		queues.hip = 0;
+		queues.mgp = 0;
+		queues.bkp = 0;
+		queues.bep = 0;
+		queues.vip = 0;
+		queues.vop = 0;
 		break;
 	case 2:
 		if (priv->ep_tx_high_queue && priv->ep_tx_low_queue) {
@@ -2423,34 +2401,34 @@ static int rtl8xxxu_init_queue_priority(struct rtl8xxxu_priv *priv)
 			lo = 0;
 		}
 
-		hiq = hi;
-		mgq = hi;
-		bkq = lo;
-		beq = lo;
-		viq = hi;
-		voq = hi;
+		queues.hiq = hi;
+		queues.mgq = hi;
+		queues.bkq = lo;
+		queues.beq = lo;
+		queues.viq = hi;
+		queues.voq = hi;
 
-		hip = 0;
-		mgp = 0;
-		bkp = 1;
-		bep = 1;
-		vip = 0;
-		vop = 0;
+		queues.hip = 0;
+		queues.mgp = 0;
+		queues.bkp = 1;
+		queues.bep = 1;
+		queues.vip = 0;
+		queues.vop = 0;
 		break;
 	case 3:
-		beq = TRXDMA_QUEUE_LOW;
-		bkq = TRXDMA_QUEUE_LOW;
-		viq = TRXDMA_QUEUE_NORMAL;
-		voq = TRXDMA_QUEUE_HIGH;
-		mgq = TRXDMA_QUEUE_HIGH;
-		hiq = TRXDMA_QUEUE_HIGH;
+		queues.beq = TRXDMA_QUEUE_LOW;
+		queues.bkq = TRXDMA_QUEUE_LOW;
+		queues.viq = TRXDMA_QUEUE_NORMAL;
+		queues.voq = TRXDMA_QUEUE_HIGH;
+		queues.mgq = TRXDMA_QUEUE_HIGH;
+		queues.hiq = TRXDMA_QUEUE_HIGH;
 
-		hip = hiq ^ 3;
-		mgp = mgq ^ 3;
-		bkp = bkq ^ 3;
-		bep = beq ^ 3;
-		vip = viq ^ 3;
-		vop = viq ^ 3;
+		queues.hip = queues.hiq ^ 3;
+		queues.mgp = queues.mgq ^ 3;
+		queues.bkp = queues.bkq ^ 3;
+		queues.bep = queues.beq ^ 3;
+		queues.vip = queues.viq ^ 3;
+		queues.vop = queues.viq ^ 3;
 		break;
 	default:
 		ret = -EINVAL;
@@ -2463,30 +2441,15 @@ static int rtl8xxxu_init_queue_priority(struct rtl8xxxu_priv *priv)
 	if (!ret) {
 		val16 = priv->iops->read16(priv, REG_TRXDMA_CTRL);
 		val16 &= 0x7;
-		val16 |= (voq << TRXDMA_CTRL_VOQ_SHIFT) |
-			(viq << TRXDMA_CTRL_VIQ_SHIFT) |
-			(beq << TRXDMA_CTRL_BEQ_SHIFT) |
-			(bkq << TRXDMA_CTRL_BKQ_SHIFT) |
-			(mgq << TRXDMA_CTRL_MGQ_SHIFT) |
-			(hiq << TRXDMA_CTRL_HIQ_SHIFT);
+		val16 |= (queues.voq << TRXDMA_CTRL_VOQ_SHIFT) |
+			(queues.viq << TRXDMA_CTRL_VIQ_SHIFT) |
+			(queues.beq << TRXDMA_CTRL_BEQ_SHIFT) |
+			(queues.bkq << TRXDMA_CTRL_BKQ_SHIFT) |
+			(queues.mgq << TRXDMA_CTRL_MGQ_SHIFT) |
+			(queues.hiq << TRXDMA_CTRL_HIQ_SHIFT);
 		priv->iops->write16(priv, REG_TRXDMA_CTRL, val16);
 
-		priv->pipe_out[TXDESC_QUEUE_VO] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[vop]);
-		priv->pipe_out[TXDESC_QUEUE_VI] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[vip]);
-		priv->pipe_out[TXDESC_QUEUE_BE] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[bep]);
-		priv->pipe_out[TXDESC_QUEUE_BK] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[bkp]);
-		priv->pipe_out[TXDESC_QUEUE_BEACON] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[0]);
-		priv->pipe_out[TXDESC_QUEUE_MGNT] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[mgp]);
-		priv->pipe_out[TXDESC_QUEUE_HIGH] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[hip]);
-		priv->pipe_out[TXDESC_QUEUE_CMD] =
-			usb_sndbulkpipe(priv->udev, priv->out_ep[0]);
+		priv->iops->configure_beacon_queue(priv, queues);
 	}
 
 	return ret;
@@ -4481,91 +4444,6 @@ static void rtl8xxxu_calc_tx_desc_csum(struct rtl8xxxu_txdesc32 *tx_desc)
 	tx_desc->csum |= cpu_to_le16(csum);
 }
 
-static void rtl8xxxu_free_tx_resources(struct rtl8xxxu_priv *priv)
-{
-	struct rtl8xxxu_tx_urb *tx_urb, *tmp;
-	unsigned long flags;
-
-	spin_lock_irqsave(&priv->tx_urb_lock, flags);
-	list_for_each_entry_safe(tx_urb, tmp, &priv->tx_urb_free_list, list) {
-		list_del(&tx_urb->list);
-		priv->tx_urb_free_count--;
-		usb_free_urb(&tx_urb->urb);
-	}
-	spin_unlock_irqrestore(&priv->tx_urb_lock, flags);
-}
-
-static struct rtl8xxxu_tx_urb *
-rtl8xxxu_alloc_tx_urb(struct rtl8xxxu_priv *priv)
-{
-	struct rtl8xxxu_tx_urb *tx_urb;
-	unsigned long flags;
-
-	spin_lock_irqsave(&priv->tx_urb_lock, flags);
-	tx_urb = list_first_entry_or_null(&priv->tx_urb_free_list,
-					  struct rtl8xxxu_tx_urb, list);
-	if (tx_urb) {
-		list_del(&tx_urb->list);
-		priv->tx_urb_free_count--;
-		if (priv->tx_urb_free_count < RTL8XXXU_TX_URB_LOW_WATER &&
-		    !priv->tx_stopped) {
-			priv->tx_stopped = true;
-			ieee80211_stop_queues(priv->hw);
-		}
-	}
-
-	spin_unlock_irqrestore(&priv->tx_urb_lock, flags);
-
-	return tx_urb;
-}
-
-static void rtl8xxxu_free_tx_urb(struct rtl8xxxu_priv *priv,
-				 struct rtl8xxxu_tx_urb *tx_urb)
-{
-	unsigned long flags;
-
-	INIT_LIST_HEAD(&tx_urb->list);
-
-	spin_lock_irqsave(&priv->tx_urb_lock, flags);
-
-	list_add(&tx_urb->list, &priv->tx_urb_free_list);
-	priv->tx_urb_free_count++;
-	if (priv->tx_urb_free_count > RTL8XXXU_TX_URB_HIGH_WATER &&
-	    priv->tx_stopped) {
-		priv->tx_stopped = false;
-		ieee80211_wake_queues(priv->hw);
-	}
-
-	spin_unlock_irqrestore(&priv->tx_urb_lock, flags);
-}
-
-static void rtl8xxxu_tx_complete(struct urb *urb)
-{
-	struct sk_buff *skb = (struct sk_buff *)urb->context;
-	struct ieee80211_tx_info *tx_info;
-	struct ieee80211_hw *hw;
-	struct rtl8xxxu_priv *priv;
-	struct rtl8xxxu_tx_urb *tx_urb =
-		container_of(urb, struct rtl8xxxu_tx_urb, urb);
-
-	tx_info = IEEE80211_SKB_CB(skb);
-	hw = tx_info->rate_driver_data[0];
-	priv = hw->priv;
-
-	skb_pull(skb, priv->fops->tx_desc_size);
-
-	ieee80211_tx_info_clear_status(tx_info);
-	tx_info->status.rates[0].idx = -1;
-	tx_info->status.rates[0].count = 0;
-
-	if (!urb->status)
-		tx_info->flags |= IEEE80211_TX_STAT_ACK;
-
-	ieee80211_tx_status_irqsafe(hw, skb);
-
-	rtl8xxxu_free_tx_urb(priv, tx_urb);
-}
-
 static void rtl8xxxu_dump_action(struct device *dev,
 				 struct ieee80211_hdr *hdr)
 {
@@ -4755,7 +4633,6 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
 	struct rtl8xxxu_priv *priv = hw->priv;
 	struct rtl8xxxu_txdesc32 *tx_desc;
-	struct rtl8xxxu_tx_urb *tx_urb;
 	struct ieee80211_sta *sta = NULL;
 	struct ieee80211_vif *vif = tx_info->control.vif;
 	struct device *dev = &priv->udev->dev;
@@ -4763,7 +4640,7 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
 	u16 pktlen = skb->len;
 	u16 rate_flag = tx_info->control.rates[0].flags;
 	int tx_desc_size = priv->fops->tx_desc_size;
-	int ret;
+
 	bool ampdu_enable, sgi = false, short_preamble = false;
 
 	if (skb_headroom(skb) < tx_desc_size) {
@@ -4776,12 +4653,6 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
 	if (unlikely(skb->len > (65535 - tx_desc_size))) {
 		dev_warn(dev, "%s: Trying to send over-sized skb (%i)\n",
 			 __func__, skb->len);
-		goto error;
-	}
-
-	tx_urb = rtl8xxxu_alloc_tx_urb(priv);
-	if (!tx_urb) {
-		dev_warn(dev, "%s: Unable to allocate tx urb\n", __func__);
 		goto error;
 	}
 
@@ -4860,16 +4731,8 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
 
 	rtl8xxxu_calc_tx_desc_csum(tx_desc);
 
-	usb_fill_bulk_urb(&tx_urb->urb, priv->udev, priv->pipe_out[queue],
-			  skb->data, skb->len, rtl8xxxu_tx_complete, skb);
-
-	usb_anchor_urb(&tx_urb->urb, &priv->tx_anchor);
-	ret = usb_submit_urb(&tx_urb->urb, GFP_ATOMIC);
-	if (ret) {
-		usb_unanchor_urb(&tx_urb->urb);
-		rtl8xxxu_free_tx_urb(priv, tx_urb);
+	if (priv->iops->tx(priv, skb, queue))
 		goto error;
-	}
 	return;
 error:
 	dev_kfree_skb(skb);
@@ -4906,91 +4769,6 @@ static void rtl8xxxu_rx_parse_phystats(struct rtl8xxxu_priv *priv,
 	} else {
 		rx_status->signal =
 			(phy_stats->cck_sig_qual_ofdm_pwdb_all >> 1) - 110;
-	}
-}
-
-static void rtl8xxxu_free_rx_resources(struct rtl8xxxu_priv *priv)
-{
-	struct rtl8xxxu_rx_urb *rx_urb, *tmp;
-	unsigned long flags;
-
-	spin_lock_irqsave(&priv->rx_urb_lock, flags);
-
-	list_for_each_entry_safe(rx_urb, tmp,
-				 &priv->rx_urb_pending_list, list) {
-		list_del(&rx_urb->list);
-		priv->rx_urb_pending_count--;
-		usb_free_urb(&rx_urb->urb);
-	}
-
-	spin_unlock_irqrestore(&priv->rx_urb_lock, flags);
-}
-
-static void rtl8xxxu_queue_rx_urb(struct rtl8xxxu_priv *priv,
-				  struct rtl8xxxu_rx_urb *rx_urb)
-{
-	struct sk_buff *skb;
-	unsigned long flags;
-	int pending = 0;
-
-	spin_lock_irqsave(&priv->rx_urb_lock, flags);
-
-	if (!priv->shutdown) {
-		list_add_tail(&rx_urb->list, &priv->rx_urb_pending_list);
-		priv->rx_urb_pending_count++;
-		pending = priv->rx_urb_pending_count;
-	} else {
-		skb = (struct sk_buff *)rx_urb->urb.context;
-		dev_kfree_skb(skb);
-		usb_free_urb(&rx_urb->urb);
-	}
-
-	spin_unlock_irqrestore(&priv->rx_urb_lock, flags);
-
-	if (pending > RTL8XXXU_RX_URB_PENDING_WATER)
-		schedule_work(&priv->rx_urb_wq);
-}
-
-static void rtl8xxxu_rx_urb_work(struct work_struct *work)
-{
-	struct rtl8xxxu_priv *priv;
-	struct rtl8xxxu_rx_urb *rx_urb, *tmp;
-	struct list_head local;
-	struct sk_buff *skb;
-	unsigned long flags;
-	int ret;
-
-	priv = container_of(work, struct rtl8xxxu_priv, rx_urb_wq);
-	INIT_LIST_HEAD(&local);
-
-	spin_lock_irqsave(&priv->rx_urb_lock, flags);
-
-	list_splice_init(&priv->rx_urb_pending_list, &local);
-	priv->rx_urb_pending_count = 0;
-
-	spin_unlock_irqrestore(&priv->rx_urb_lock, flags);
-
-	list_for_each_entry_safe(rx_urb, tmp, &local, list) {
-		list_del_init(&rx_urb->list);
-		ret = rtl8xxxu_submit_rx_urb(priv, rx_urb);
-		/*
-		 * If out of memory or temporary error, put it back on the
-		 * queue and try again. Otherwise the device is dead/gone
-		 * and we should drop it.
-		 */
-		switch (ret) {
-		case 0:
-			break;
-		case -ENOMEM:
-		case -EAGAIN:
-			rtl8xxxu_queue_rx_urb(priv, rx_urb);
-			break;
-		default:
-			pr_info("failed to requeue urb %i\n", ret);
-			skb = (struct sk_buff *)rx_urb->urb.context;
-			dev_kfree_skb(skb);
-			usb_free_urb(&rx_urb->urb);
-		}
 	}
 }
 
@@ -5191,114 +4969,6 @@ int rtl8xxxu_parse_rxdesc24(struct rtl8xxxu_priv *priv, struct sk_buff *skb)
 
 	ieee80211_rx_irqsafe(hw, skb);
 	return RX_TYPE_DATA_PKT;
-}
-
-static void rtl8xxxu_rx_complete(struct urb *urb)
-{
-	struct rtl8xxxu_rx_urb *rx_urb =
-		container_of(urb, struct rtl8xxxu_rx_urb, urb);
-	struct ieee80211_hw *hw = rx_urb->hw;
-	struct rtl8xxxu_priv *priv = hw->priv;
-	struct sk_buff *skb = (struct sk_buff *)urb->context;
-	struct device *dev = &priv->udev->dev;
-
-	skb_put(skb, urb->actual_length);
-
-	if (urb->status == 0) {
-		priv->fops->parse_rx_desc(priv, skb);
-
-		skb = NULL;
-		rx_urb->urb.context = NULL;
-		rtl8xxxu_queue_rx_urb(priv, rx_urb);
-	} else {
-		dev_dbg(dev, "%s: status %i\n",	__func__, urb->status);
-		goto cleanup;
-	}
-	return;
-
-cleanup:
-	usb_free_urb(urb);
-	dev_kfree_skb(skb);
-	return;
-}
-
-static int rtl8xxxu_submit_rx_urb(struct rtl8xxxu_priv *priv,
-				  struct rtl8xxxu_rx_urb *rx_urb)
-{
-	struct rtl8xxxu_fileops *fops = priv->fops;
-	struct sk_buff *skb;
-	int skb_size;
-	int ret, rx_desc_sz;
-
-	rx_desc_sz = fops->rx_desc_size;
-
-	if (priv->rx_buf_aggregation && fops->rx_agg_buf_size) {
-		skb_size = fops->rx_agg_buf_size;
-		skb_size += (rx_desc_sz + sizeof(struct rtl8723au_phy_stats));
-	} else {
-		skb_size = IEEE80211_MAX_FRAME_LEN;
-	}
-
-	skb = __netdev_alloc_skb(NULL, skb_size, GFP_KERNEL);
-	if (!skb)
-		return -ENOMEM;
-
-	memset(skb->data, 0, rx_desc_sz);
-	usb_fill_bulk_urb(&rx_urb->urb, priv->udev, priv->pipe_in, skb->data,
-			  skb_size, rtl8xxxu_rx_complete, skb);
-	usb_anchor_urb(&rx_urb->urb, &priv->rx_anchor);
-	ret = usb_submit_urb(&rx_urb->urb, GFP_ATOMIC);
-	if (ret)
-		usb_unanchor_urb(&rx_urb->urb);
-	return ret;
-}
-
-static void rtl8xxxu_int_complete(struct urb *urb)
-{
-	struct rtl8xxxu_priv *priv = (struct rtl8xxxu_priv *)urb->context;
-	struct device *dev = &priv->udev->dev;
-	int ret;
-
-	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_INTERRUPT)
-		dev_dbg(dev, "%s: status %i\n", __func__, urb->status);
-	if (urb->status == 0) {
-		usb_anchor_urb(urb, &priv->int_anchor);
-		ret = usb_submit_urb(urb, GFP_ATOMIC);
-		if (ret)
-			usb_unanchor_urb(urb);
-	} else {
-		dev_dbg(dev, "%s: Error %i\n", __func__, urb->status);
-	}
-}
-
-
-static int rtl8xxxu_submit_int_urb(struct ieee80211_hw *hw)
-{
-	struct rtl8xxxu_priv *priv = hw->priv;
-	struct urb *urb;
-	u32 val32;
-	int ret;
-
-	urb = usb_alloc_urb(0, GFP_KERNEL);
-	if (!urb)
-		return -ENOMEM;
-
-	usb_fill_int_urb(urb, priv->udev, priv->pipe_interrupt,
-			 priv->int_buf, USB_INTR_CONTENT_LENGTH,
-			 rtl8xxxu_int_complete, priv, 1);
-	usb_anchor_urb(urb, &priv->int_anchor);
-	ret = usb_submit_urb(urb, GFP_KERNEL);
-	if (ret) {
-		usb_unanchor_urb(urb);
-		goto error;
-	}
-
-	val32 = priv->iops->read32(priv, REG_USB_HIMR);
-	val32 |= USB_HIMR_CPWM;
-	priv->iops->write32(priv, REG_USB_HIMR, val32);
-
-error:
-	return ret;
 }
 
 static int rtl8xxxu_add_interface(struct ieee80211_hw *hw,
@@ -5620,10 +5290,7 @@ rtl8xxxu_ampdu_action(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 static int rtl8xxxu_start(struct ieee80211_hw *hw)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct rtl8xxxu_rx_urb *rx_urb;
-	struct rtl8xxxu_tx_urb *tx_urb;
-	unsigned long flags;
-	int ret, i;
+	int ret, start_ret;
 
 	ret = 0;
 
@@ -5631,52 +5298,13 @@ static int rtl8xxxu_start(struct ieee80211_hw *hw)
 	if (ret)
 		goto error_out;
 
-	init_usb_anchor(&priv->rx_anchor);
-	init_usb_anchor(&priv->tx_anchor);
-	init_usb_anchor(&priv->int_anchor);
-
 	priv->fops->enable_rf(priv);
-	if (priv->usb_interrupts) {
-		ret = rtl8xxxu_submit_int_urb(hw);
-		if (ret)
-			goto exit;
-	}
 
-	for (i = 0; i < RTL8XXXU_TX_URBS; i++) {
-		tx_urb = kmalloc(sizeof(struct rtl8xxxu_tx_urb), GFP_KERNEL);
-		if (!tx_urb) {
-			if (!i)
-				ret = -ENOMEM;
-
-			goto error_out;
-		}
-		usb_init_urb(&tx_urb->urb);
-		INIT_LIST_HEAD(&tx_urb->list);
-		tx_urb->hw = hw;
-		list_add(&tx_urb->list, &priv->tx_urb_free_list);
-		priv->tx_urb_free_count++;
-	}
-
-	priv->tx_stopped = false;
-
-	spin_lock_irqsave(&priv->rx_urb_lock, flags);
-	priv->shutdown = false;
-	spin_unlock_irqrestore(&priv->rx_urb_lock, flags);
-
-	for (i = 0; i < RTL8XXXU_RX_URBS; i++) {
-		rx_urb = kmalloc(sizeof(struct rtl8xxxu_rx_urb), GFP_KERNEL);
-		if (!rx_urb) {
-			if (!i)
-				ret = -ENOMEM;
-
-			goto error_out;
-		}
-		usb_init_urb(&rx_urb->urb);
-		INIT_LIST_HEAD(&rx_urb->list);
-		rx_urb->hw = hw;
-
-		ret = rtl8xxxu_submit_rx_urb(priv, rx_urb);
-	}
+	start_ret = priv->iops->start(priv, &ret); // TODO: Review
+	if (start_ret == 1)
+		goto exit;
+	else if (start_ret == 2)
+		goto error_out;
 exit:
 	/*
 	 * Accept all data and mgmt frames
@@ -5689,7 +5317,6 @@ exit:
 	return ret;
 
 error_out:
-	rtl8xxxu_free_tx_resources(priv);
 	/*
 	 * Disable all data and mgmt frames
 	 */
@@ -5702,37 +5329,16 @@ error_out:
 static void rtl8xxxu_stop(struct ieee80211_hw *hw)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	unsigned long flags;
 
 	priv->iops->write8(priv, REG_TXPAUSE, 0xff);
 
 	priv->iops->write16(priv, REG_RXFLTMAP0, 0x0000);
 	priv->iops->write16(priv, REG_RXFLTMAP2, 0x0000);
 
-	spin_lock_irqsave(&priv->rx_urb_lock, flags);
-	priv->shutdown = true;
-	spin_unlock_irqrestore(&priv->rx_urb_lock, flags);
-
-	usb_kill_anchored_urbs(&priv->rx_anchor);
-	usb_kill_anchored_urbs(&priv->tx_anchor);
-	if (priv->usb_interrupts)
-		usb_kill_anchored_urbs(&priv->int_anchor);
-
-	priv->iops->write8(priv, REG_TXPAUSE, 0xff);
-
-	priv->fops->disable_rf(priv);
-
-	/*
-	 * Disable interrupts
-	 */
-	if (priv->usb_interrupts)
-		priv->iops->write32(priv, REG_USB_HIMR, 0);
-
-	rtl8xxxu_free_rx_resources(priv);
-	rtl8xxxu_free_tx_resources(priv);
+	priv->iops->stop(priv);
 }
 
-static const struct ieee80211_ops rtl8xxxu_ops = {
+const struct ieee80211_ops rtl8xxxu_ops = {
 	.tx = rtl8xxxu_tx,
 	.add_interface = rtl8xxxu_add_interface,
 	.remove_interface = rtl8xxxu_remove_interface,
@@ -5749,501 +5355,21 @@ static const struct ieee80211_ops rtl8xxxu_ops = {
 	.ampdu_action = rtl8xxxu_ampdu_action,
 };
 
-static int rtl8xxxu_parse_usb(struct rtl8xxxu_priv *priv,
-			      struct usb_interface *interface)
-{
-	struct usb_interface_descriptor *interface_desc;
-	struct usb_host_interface *host_interface;
-	struct usb_endpoint_descriptor *endpoint;
-	struct device *dev = &priv->udev->dev;
-	int i, j = 0, endpoints;
-	u8 dir, xtype, num;
-	int ret = 0;
-
-	host_interface = &interface->altsetting[0];
-	interface_desc = &host_interface->desc;
-	endpoints = interface_desc->bNumEndpoints;
-
-	for (i = 0; i < endpoints; i++) {
-		endpoint = &host_interface->endpoint[i].desc;
-
-		dir = endpoint->bEndpointAddress & USB_ENDPOINT_DIR_MASK;
-		num = usb_endpoint_num(endpoint);
-		xtype = usb_endpoint_type(endpoint);
-		if (rtl8xxxu_debug & RTL8XXXU_DEBUG_USB)
-			dev_dbg(dev,
-				"%s: endpoint: dir %02x, # %02x, type %02x\n",
-				__func__, dir, num, xtype);
-		if (usb_endpoint_dir_in(endpoint) &&
-		    usb_endpoint_xfer_bulk(endpoint)) {
-			if (rtl8xxxu_debug & RTL8XXXU_DEBUG_USB)
-				dev_dbg(dev, "%s: in endpoint num %i\n",
-					__func__, num);
-
-			if (priv->pipe_in) {
-				dev_warn(dev,
-					 "%s: Too many IN pipes\n", __func__);
-				ret = -EINVAL;
-				goto exit;
-			}
-
-			priv->pipe_in =	usb_rcvbulkpipe(priv->udev, num);
-		}
-
-		if (usb_endpoint_dir_in(endpoint) &&
-		    usb_endpoint_xfer_int(endpoint)) {
-			if (rtl8xxxu_debug & RTL8XXXU_DEBUG_USB)
-				dev_dbg(dev, "%s: interrupt endpoint num %i\n",
-					__func__, num);
-
-			if (priv->pipe_interrupt) {
-				dev_warn(dev, "%s: Too many INTERRUPT pipes\n",
-					 __func__);
-				ret = -EINVAL;
-				goto exit;
-			}
-
-			priv->pipe_interrupt = usb_rcvintpipe(priv->udev, num);
-		}
-
-		if (usb_endpoint_dir_out(endpoint) &&
-		    usb_endpoint_xfer_bulk(endpoint)) {
-			if (rtl8xxxu_debug & RTL8XXXU_DEBUG_USB)
-				dev_dbg(dev, "%s: out endpoint num %i\n",
-					__func__, num);
-			if (j >= RTL8XXXU_OUT_ENDPOINTS) {
-				dev_warn(dev,
-					 "%s: Too many OUT pipes\n", __func__);
-				ret = -EINVAL;
-				goto exit;
-			}
-			priv->out_ep[j++] = num;
-		}
-	}
-exit:
-	priv->nr_out_eps = j;
-	return ret;
-}
-
-static int rtl8xxxu_probe(struct usb_interface *interface,
-			  const struct usb_device_id *id)
-{
-	struct rtl8xxxu_priv *priv;
-	struct ieee80211_hw *hw;
-	struct usb_device *udev;
-	struct ieee80211_supported_band *sband;
-	int ret;
-	int untested = 1;
-
-	udev = usb_get_dev(interface_to_usbdev(interface));
-
-	switch (id->idVendor) {
-	case USB_VENDOR_ID_REALTEK:
-		switch(id->idProduct) {
-		case 0x1724:
-		case 0x8176:
-		case 0x8178:
-		case 0x817f:
-		case 0x818b:
-			untested = 0;
-			break;
-		}
-		break;
-	case 0x7392:
-		if (id->idProduct == 0x7811)
-			untested = 0;
-		break;
-	case 0x050d:
-		if (id->idProduct == 0x1004)
-			untested = 0;
-		break;
-	case 0x20f4:
-		if (id->idProduct == 0x648b)
-			untested = 0;
-		break;
-	case 0x2001:
-		if (id->idProduct == 0x3308)
-			untested = 0;
-		break;
-	case 0x2357:
-		if (id->idProduct == 0x0109)
-			untested = 0;
-		break;
-	default:
-		break;
-	}
-
-	if (untested) {
-		rtl8xxxu_debug |= RTL8XXXU_DEBUG_EFUSE;
-		dev_info(&udev->dev,
-			 "This Realtek USB WiFi dongle (0x%04x:0x%04x) is untested!\n",
-			 id->idVendor, id->idProduct);
-		dev_info(&udev->dev,
-			 "Please report results to Jes.Sorensen@gmail.com\n");
-	}
-
-	hw = ieee80211_alloc_hw(sizeof(struct rtl8xxxu_priv), &rtl8xxxu_ops);
-	if (!hw) {
-		ret = -ENOMEM;
-		priv = NULL;
-		goto exit;
-	}
-
-	priv = hw->priv;
-	priv->hw = hw;
-	priv->udev = udev;
-	priv->fops = (struct rtl8xxxu_fileops *)id->driver_info;
-	priv->iops = &rtl8xxxu_usb_intops;
-	mutex_init(&priv->usb_buf_mutex);
-	mutex_init(&priv->h2c_mutex);
-	INIT_LIST_HEAD(&priv->tx_urb_free_list);
-	spin_lock_init(&priv->tx_urb_lock);
-	INIT_LIST_HEAD(&priv->rx_urb_pending_list);
-	spin_lock_init(&priv->rx_urb_lock);
-	INIT_WORK(&priv->rx_urb_wq, rtl8xxxu_rx_urb_work);
-
-	usb_set_intfdata(interface, hw);
-
-	ret = rtl8xxxu_parse_usb(priv, interface);
-	if (ret)
-		goto exit;
-
-	ret = rtl8xxxu_identify_chip(priv);
-	if (ret) {
-		dev_err(&udev->dev, "Fatal - failed to identify chip\n");
-		goto exit;
-	}
-
-	ret = rtl8xxxu_read_efuse(priv);
-	if (ret) {
-		dev_err(&udev->dev, "Fatal - failed to read EFuse\n");
-		goto exit;
-	}
-
-	ret = priv->fops->parse_efuse(priv);
-	if (ret) {
-		dev_err(&udev->dev, "Fatal - failed to parse EFuse\n");
-		goto exit;
-	}
-
-	rtl8xxxu_print_chipinfo(priv);
-
-	ret = priv->fops->load_firmware(priv);
-	if (ret) {
-		dev_err(&udev->dev, "Fatal - failed to load firmware\n");
-		goto exit;
-	}
-
-	//ret = rtl8xxxu_init_device(hw);
-	//if (ret)
-	//	goto exit;
-
-	hw->wiphy->max_scan_ssids = 1;
-	hw->wiphy->max_scan_ie_len = IEEE80211_MAX_DATA_LEN;
-	hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION);
-	hw->queues = 4;
-
-	sband = &rtl8xxxu_supported_band;
-	sband->ht_cap.ht_supported = true;
-	sband->ht_cap.ampdu_factor = IEEE80211_HT_MAX_AMPDU_64K;
-	sband->ht_cap.ampdu_density = IEEE80211_HT_MPDU_DENSITY_16;
-	sband->ht_cap.cap = IEEE80211_HT_CAP_SGI_20 | IEEE80211_HT_CAP_SGI_40;
-	memset(&sband->ht_cap.mcs, 0, sizeof(sband->ht_cap.mcs));
-	sband->ht_cap.mcs.rx_mask[0] = 0xff;
-	sband->ht_cap.mcs.rx_mask[4] = 0x01;
-	if (priv->rf_paths > 1) {
-		sband->ht_cap.mcs.rx_mask[1] = 0xff;
-		sband->ht_cap.cap |= IEEE80211_HT_CAP_SGI_40;
-	}
-	sband->ht_cap.mcs.tx_params = IEEE80211_HT_MCS_TX_DEFINED;
-	/*
-	 * Some APs will negotiate HT20_40 in a noisy environment leading
-	 * to miserable performance. Rather than defaulting to this, only
-	 * enable it if explicitly requested at module load time.
-	 */
-	if (rtl8xxxu_ht40_2g) {
-		dev_info(&udev->dev, "Enabling HT_20_40 on the 2.4GHz band\n");
-		sband->ht_cap.cap |= IEEE80211_HT_CAP_SUP_WIDTH_20_40;
-	}
-	hw->wiphy->bands[NL80211_BAND_2GHZ] = sband;
-
-	hw->wiphy->rts_threshold = 2347;
-
-	SET_IEEE80211_DEV(priv->hw, &interface->dev);
-	SET_IEEE80211_PERM_ADDR(hw, priv->mac_addr);
-
-	hw->extra_tx_headroom = priv->fops->tx_desc_size;
-	ieee80211_hw_set(hw, SIGNAL_DBM);
-	/*
-	 * The firmware handles rate control
-	 */
-	ieee80211_hw_set(hw, HAS_RATE_CONTROL);
-	ieee80211_hw_set(hw, AMPDU_AGGREGATION);
-
-	wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
-
-	ret = ieee80211_register_hw(priv->hw);
-	if (ret) {
-		dev_err(&udev->dev, "%s: Failed to register: %i\n",
-			__func__, ret);
-		goto exit;
-	}
-
-	return 0;
-
-exit:
-	usb_set_intfdata(interface, NULL);
-
-	if (priv) {
-		kfree(priv->fw_data);
-		mutex_destroy(&priv->usb_buf_mutex);
-		mutex_destroy(&priv->h2c_mutex);
-	}
-	usb_put_dev(udev);
-
-	ieee80211_free_hw(hw);
-
-	return ret;
-}
-
-static void rtl8xxxu_disconnect(struct usb_interface *interface)
-{
-	struct rtl8xxxu_priv *priv;
-	struct ieee80211_hw *hw;
-
-	hw = usb_get_intfdata(interface);
-	priv = hw->priv;
-
-	ieee80211_unregister_hw(hw);
-
-	priv->fops->power_off(priv);
-
-	usb_set_intfdata(interface, NULL);
-
-	dev_info(&priv->udev->dev, "disconnecting\n");
-
-	kfree(priv->fw_data);
-	mutex_destroy(&priv->usb_buf_mutex);
-	mutex_destroy(&priv->h2c_mutex);
-
-	if (priv->udev->state != USB_STATE_NOTATTACHED) {
-		dev_info(&priv->udev->dev,
-			 "Device still attached, trying to reset\n");
-		usb_reset_device(priv->udev);
-	}
-	usb_put_dev(priv->udev);
-	ieee80211_free_hw(hw);
-}
-
-static const struct usb_device_id dev_table[] = {
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8724, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8723au_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x1724, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8723au_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x0724, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8723au_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x818b, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-/* TP-Link TL-WN822N v4 */
-{USB_DEVICE_AND_INTERFACE_INFO(0x2357, 0x0108, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-/* D-Link DWA-131 rev E1, tested by David Patiño */
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x3319, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-/* Tested by Myckel Habets */
-{USB_DEVICE_AND_INTERFACE_INFO(0x2357, 0x0109, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0xb720, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8723bu_fops},
-#ifdef CONFIG_RTL8XXXU_UNTESTED
-/* Still supported by rtlwifi */
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8176, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8178, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x817f, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Tested by Larry Finger */
-{USB_DEVICE_AND_INTERFACE_INFO(0x7392, 0x7811, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Tested by Andrea Merello */
-{USB_DEVICE_AND_INTERFACE_INFO(0x050d, 0x1004, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Tested by Jocelyn Mayer */
-{USB_DEVICE_AND_INTERFACE_INFO(0x20f4, 0x648b, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Tested by Stefano Bravi */
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x3308, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Tested by Marek Kraus - Edimax EW-7611ULB */
-{USB_DEVICE_AND_INTERFACE_INFO(0x7392, 0xa611, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8723bu_fops},
-/* Currently untested 8188 series devices */
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x018a, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8191, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8170, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x8177, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x817a, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x817b, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x817d, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x817e, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x818a, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x317f, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x1058, 0x0631, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04bb, 0x094c, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x050d, 0x1102, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x06f8, 0xe033, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x07b8, 0x8189, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0846, 0x9041, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0b05, 0x17ba, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x1e1e, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x5088, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0df6, 0x0052, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0df6, 0x005c, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0eb0, 0x9071, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x103c, 0x1629, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x13d3, 0x3357, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x330b, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0x4902, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0xab2a, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0xab2e, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0xed17, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x4855, 0x0090, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x4856, 0x0091, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0xcdab, 0x8010, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaff7, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaff9, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaffa, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaff8, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaffb, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x04f2, 0xaffc, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0x1201, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* Currently untested 8192 series devices */
-{USB_DEVICE_AND_INTERFACE_INFO(0x04bb, 0x0950, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x050d, 0x2102, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x050d, 0x2103, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0586, 0x341f, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x06f8, 0xe035, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0b05, 0x17ab, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0df6, 0x0061, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0df6, 0x0070, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0789, 0x016d, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x07aa, 0x0056, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x07b8, 0x8178, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0846, 0x9021, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0846, 0xf001, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x2e2e, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0e66, 0x0019, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x0e66, 0x0020, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x3307, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x3309, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x330a, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0xab2b, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x20f4, 0x624d, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2357, 0x0100, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x4855, 0x0091, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x7392, 0x7822, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192cu_fops},
-/* found in rtl8192eu vendor driver */
-{USB_DEVICE_AND_INTERFACE_INFO(0x2357, 0x0107, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(0x2019, 0xab33, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDOR_ID_REALTEK, 0x818c, 0xff, 0xff, 0xff),
-	.driver_info = (unsigned long)&rtl8192eu_fops},
-#endif
-{ }
-};
-
-static struct usb_driver rtl8xxxu_driver = {
-	.name = DRIVER_NAME,
-	.probe = rtl8xxxu_probe,
-	.disconnect = rtl8xxxu_disconnect,
-	.id_table = dev_table,
-	.no_dynamic_id = 1,
-	.disable_hub_initiated_lpm = 1,
-};
-
 static int __init rtl8xxxu_module_init(void)
 {
 	int res;
 
-	res = usb_register(&rtl8xxxu_driver);
+	res = rtl8xxxu_usb_register();
 	if (res < 0)
-		pr_err(DRIVER_NAME ": usb_register() failed (%i)\n", res);
+		pr_err(DRIVER_NAME ": rtl8xxxu_usb_register() failed (%i)\n", res);
 
 	return res;
 }
 
 static void __exit rtl8xxxu_module_exit(void)
 {
-	usb_deregister(&rtl8xxxu_driver);
+	rtl8xxxu_usb_deregister();
 }
-
-
-MODULE_DEVICE_TABLE(usb, dev_table);
 
 module_init(rtl8xxxu_module_init);
 module_exit(rtl8xxxu_module_exit);
