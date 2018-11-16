@@ -1085,7 +1085,7 @@ static const struct usb_device_id rtl8xxxu_usb_dev_table[] = {
 
 MODULE_DEVICE_TABLE(usb, rtl8xxxu_usb_dev_table);
 
-static struct usb_driver rtl8xxxu_driver = {
+static struct usb_driver rtl8xxxu_usb_driver = {
 	.name = DRIVER_NAME,
 	.probe = rtl8xxxu_usb_probe,
 	.disconnect = rtl8xxxu_usb_disconnect,
@@ -1096,12 +1096,12 @@ static struct usb_driver rtl8xxxu_driver = {
 
 int rtl8xxxu_usb_register(void)
 {
-	return usb_register(&rtl8xxxu_driver);
+	return usb_register(&rtl8xxxu_usb_driver);
 }
 
 void rtl8xxxu_usb_deregister(void)
 {
-	usb_deregister(&rtl8xxxu_driver);
+	usb_deregister(&rtl8xxxu_usb_driver);
 }
 
 struct rtl8xxxu_intops rtl8xxxu_usb_intops = {
