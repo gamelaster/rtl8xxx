@@ -5394,6 +5394,10 @@ static int __init rtl8xxxu_module_init(void)
 	if (res < 0)
 		pr_err(DRIVER_NAME ": rtl8xxxu_usb_register() failed (%i)\n", res);
 
+	res = rtl8xxxu_sdio_register();
+	if (res < 0)
+		pr_err(DRIVER_NAME ": rtl8xxxu_sdio_register() failed (%i)\n", res);
+
 	return res;
 }
 

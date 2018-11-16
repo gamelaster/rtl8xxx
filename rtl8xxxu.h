@@ -1214,6 +1214,11 @@ struct rtl8xxxu_fileops;
 
 struct rtl8xxxu_priv {
 	struct ieee80211_hw *hw;
+<<<<<<< HEAD
+=======
+	struct usb_device *udev;
+	struct sdio_func *sfunc;
+>>>>>>> Begin work on SDIO
 	struct rtl8xxxu_fileops *fops;
 	struct rtl8xxxu_intops *iops;
 	struct device *dev;
@@ -1493,6 +1498,8 @@ int rtl8xxxu_hw_init(struct rtl8xxxu_priv *priv);
 
 int rtl8xxxu_usb_register(void);
 void rtl8xxxu_usb_deregister(void);
+int rtl8xxxu_sdio_register(void);
+void rtl8xxxu_sdio_deregister(void);
 int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv);
 int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv);
 void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv);
@@ -1503,3 +1510,4 @@ extern struct rtl8xxxu_fileops rtl8723au_fops;
 extern struct rtl8xxxu_fileops rtl8723bu_fops;
 
 extern struct rtl8xxxu_intops rtl8xxxu_usb_intops;
+extern struct rtl8xxxu_intops rtl8xxxu_sdio_intops;
