@@ -1214,20 +1214,13 @@ struct rtl8xxxu_fileops;
 
 struct rtl8xxxu_priv {
 	struct ieee80211_hw *hw;
-	struct usb_device *udev;
 	struct rtl8xxxu_fileops *fops;
 	struct rtl8xxxu_intops *iops;
-
-	spinlock_t tx_urb_lock;
-	struct list_head tx_urb_free_list;
-	int tx_urb_free_count;
-	bool tx_stopped;
-
-	spinlock_t rx_urb_lock;
-	struct list_head rx_urb_pending_list;
-	int rx_urb_pending_count;
+	struct device *dev;
+	void *card;
+	
+	bool tx_stopped; // TODO: maybe in usb
 	bool shutdown;
-	struct work_struct rx_urb_wq;
 
 	u8 mac_addr[ETH_ALEN];
 	char chip_name[8];
@@ -1267,7 +1260,6 @@ struct rtl8xxxu_priv {
 	u32 has_polarity_ctrl:1;
 	u32 has_eeprom:1;
 	u32 boot_eeprom:1;
-	u32 usb_interrupts:1;
 	u32 ep_tx_high_queue:1;
 	u32 ep_tx_normal_queue:1;
 	u32 ep_tx_low_queue:1;
@@ -1289,19 +1281,10 @@ struct rtl8xxxu_priv {
 	int next_mbox;
 	int nr_out_eps;
 
-	struct mutex h2c_mutex;
+	struct mutex h2c_mutex; // TODO: Maybe in USB
 
-	struct usb_anchor rx_anchor;
-	struct usb_anchor tx_anchor;
-	struct usb_anchor int_anchor;
 	struct rtl8xxxu_firmware_header *fw_data;
 	size_t fw_size;
-	struct mutex usb_buf_mutex;
-	union {
-		__le32 val32;
-		__le16 val16;
-		u8 val8;
-	} usb_buf;
 	union {
 		u8 raw[EFUSE_MAP_LEN];
 		struct rtl8723au_efuse efuse8723;
@@ -1317,6 +1300,32 @@ struct rtl8xxxu_priv {
 	u8 pi_enabled:1;
 	u8 no_pape:1;
 	u8 int_buf[USB_INTR_CONTENT_LENGTH];
+};
+
+struct rtl8xxxu_usb_card {
+	struct rtl8xxxu_priv *priv;
+	struct usb_device *udev;
+	
+	spinlock_t tx_urb_lock;
+	struct list_head tx_urb_free_list;
+	int tx_urb_free_count;
+	
+	spinlock_t rx_urb_lock;
+	struct list_head rx_urb_pending_list;
+	int rx_urb_pending_count;
+	struct work_struct rx_urb_wq;
+	
+	struct usb_anchor rx_anchor;
+	struct usb_anchor tx_anchor;
+	struct usb_anchor int_anchor;
+	
+	struct mutex usb_buf_mutex;
+	union {
+		__le32 val32;
+		__le16 val16;
+		u8 val8;
+	} usb_buf;
+	u32 usb_interrupts:1;
 };
 
 struct rtl8xxxu_rx_urb {
@@ -1391,6 +1400,7 @@ struct rtl8xxxu_intops {
 	int (*writeN) (struct rtl8xxxu_priv *priv, u16 addr, u8 *buf, u16 len);
 	void (*configure_beacon_queue) (struct rtl8xxxu_priv *priv, struct rtl8xxxu_queues queues);
 	int (*tx) (struct rtl8xxxu_priv *priv, struct sk_buff *skb, u32 queue);
+	int (*identify_chip) (struct rtl8xxxu_priv *priv, u32 chip_cfg);
 	int (*start) (struct rtl8xxxu_priv *priv, int *ret);
 	void (*stop) (struct rtl8xxxu_priv *priv);
 };
@@ -1478,6 +1488,8 @@ void rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 			     struct rtl8xxxu_txdesc32 *tx_desc32, bool sgi,
 			     bool short_preamble, bool ampdu_enable,
 			     u32 rts_rate);
+int rtl8xxxu_hw_alloc(struct rtl8xxxu_priv *priv);
+int rtl8xxxu_hw_init(struct rtl8xxxu_priv *priv);
 
 int rtl8xxxu_usb_register(void);
 void rtl8xxxu_usb_deregister(void);

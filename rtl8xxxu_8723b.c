@@ -456,18 +456,18 @@ static int rtl8723bu_parse_efuse(struct rtl8xxxu_priv *priv)
 	priv->has_xtalk = 1;
 	priv->xtalk = priv->efuse_wifi.efuse8723bu.xtal_k & 0x3f;
 
-	dev_info(&priv->udev->dev, "Vendor: %.7s\n", efuse->vendor_name);
-	dev_info(&priv->udev->dev, "Product: %.41s\n", efuse->device_name);
+	dev_info(priv->dev, "Vendor: %.7s\n", efuse->vendor_name);
+	dev_info(priv->dev, "Product: %.41s\n", efuse->device_name);
 
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_EFUSE) {
 		int i;
 		unsigned char *raw = priv->efuse_wifi.raw;
 
-		dev_info(&priv->udev->dev,
+		dev_info(priv->dev,
 			 "%s: dumping efuse (0x%02zx bytes):\n",
 			 __func__, sizeof(struct rtl8723bu_efuse));
 		for (i = 0; i < sizeof(struct rtl8723bu_efuse); i += 8)
-			dev_info(&priv->udev->dev, "%02x: %8ph\n", i, &raw[i]);
+			dev_info(priv->dev, "%02x: %8ph\n", i, &raw[i]);
 	}
 
 	return 0;
@@ -886,7 +886,7 @@ out:
 static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 				      int result[][8], int t)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 i, val32;
 	int path_a_ok /*, path_b_ok */;
 	int retry = 2;
@@ -1093,7 +1093,7 @@ static void rtl8723bu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 
 static void rtl8723bu_phy_iq_calibrate(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int result[4][8];	/* last is final result */
 	int i, candidate;
 	bool path_a_ok, path_b_ok;
@@ -1248,7 +1248,7 @@ static int rtl8723bu_active_to_emu(struct rtl8xxxu_priv *priv)
 	}
 
 	if (!count) {
-		dev_warn(&priv->udev->dev, "%s: Disabling MAC timed out\n",
+		dev_warn(priv->dev, "%s: Disabling MAC timed out\n",
 			 __func__);
 		ret = -EBUSY;
 		goto exit;

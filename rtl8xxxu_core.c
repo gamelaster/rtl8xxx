@@ -668,7 +668,7 @@ u32 rtl8xxxu_read_rfreg(struct rtl8xxxu_priv *priv,
 	retval &= 0xfffff;
 
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_RFREG_READ)
-		dev_info(&priv->udev->dev, "%s(%02x) = 0x%06x\n",
+		dev_info(priv->dev, "%s(%02x) = 0x%06x\n",
 			 __func__, reg, retval);
 	return retval;
 }
@@ -685,7 +685,7 @@ int rtl8xxxu_write_rfreg(struct rtl8xxxu_priv *priv,
 	u32 dataaddr, val32;
 
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_RFREG_WRITE)
-		dev_info(&priv->udev->dev, "%s(%02x) = 0x%06x\n",
+		dev_info(priv->dev, "%s(%02x) = 0x%06x\n",
 			 __func__, reg, data);
 
 	data &= FPGA0_LSSI_PARM_DATA_MASK;
@@ -718,7 +718,7 @@ int rtl8xxxu_write_rfreg(struct rtl8xxxu_priv *priv,
 static int
 rtl8xxxu_gen1_h2c_cmd(struct rtl8xxxu_priv *priv, struct h2c_cmd *h2c, int len)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int mbox_nr, retry, retval = 0;
 	int mbox_reg, mbox_ext_reg;
 	u8 val8;
@@ -768,7 +768,7 @@ error:
 int
 rtl8xxxu_gen2_h2c_cmd(struct rtl8xxxu_priv *priv, struct h2c_cmd *h2c, int len)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int mbox_nr, retry, retval = 0;
 	int mbox_reg, mbox_ext_reg;
 	u8 val8;
@@ -1257,7 +1257,7 @@ rtl8xxxu_gen1_set_tx_power(struct rtl8xxxu_priv *priv, int channel, bool ht40)
 	}
 
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_CHANNEL)
-		dev_info(&priv->udev->dev,
+		dev_info(priv->dev,
 			 "%s: Setting TX power CCK A: %02x, "
 			 "CCK B: %02x, OFDM A: %02x, OFDM B: %02x\n",
 			 __func__, cck[0], cck[1], ofdm[0], ofdm[1]);
@@ -1400,7 +1400,7 @@ rtl8xxxu_set_spec_sifs(struct rtl8xxxu_priv *priv, u16 cck, u16 ofdm)
 
 void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	char *cut;
 
 	switch (priv->chip_cut) {
@@ -1434,8 +1434,8 @@ void rtl8xxxu_print_chipinfo(struct rtl8xxxu_priv *priv)
 
 int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
-	u32 val32, bonding;
+	struct device *dev = priv->dev;
+	u32 val32;
 	u16 val16;
 
 	val32 = priv->iops->read32(priv, REG_SYS_CFG);
@@ -1446,70 +1446,9 @@ int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 		return -ENOTSUPP;
 	}
 
-	if (val32 & SYS_CFG_BT_FUNC) {
-		if (priv->chip_cut >= 3) {
-			sprintf(priv->chip_name, "8723BU");
-			priv->rtl_chip = RTL8723B;
-		} else {
-			sprintf(priv->chip_name, "8723AU");
-			priv->usb_interrupts = 1;
-			priv->rtl_chip = RTL8723A;
-		}
-
-		priv->rf_paths = 1;
-		priv->rx_paths = 1;
-		priv->tx_paths = 1;
-
-		val32 = priv->iops->read32(priv, REG_MULTI_FUNC_CTRL);
-		if (val32 & MULTI_WIFI_FUNC_EN)
-			priv->has_wifi = 1;
-		if (val32 & MULTI_BT_FUNC_EN)
-			priv->has_bluetooth = 1;
-		if (val32 & MULTI_GPS_FUNC_EN)
-			priv->has_gps = 1;
-		priv->is_multi_func = 1;
-	} else if (val32 & SYS_CFG_TYPE_ID) {
-		bonding = priv->iops->read32(priv, REG_HPON_FSM);
-		bonding &= HPON_FSM_BONDING_MASK;
-		if (priv->fops->tx_desc_size ==
-		    sizeof(struct rtl8xxxu_txdesc40)) {
-			if (bonding == HPON_FSM_BONDING_1T2R) {
-				sprintf(priv->chip_name, "8191EU");
-				priv->rf_paths = 2;
-				priv->rx_paths = 2;
-				priv->tx_paths = 1;
-				priv->rtl_chip = RTL8191E;
-			} else {
-				sprintf(priv->chip_name, "8192EU");
-				priv->rf_paths = 2;
-				priv->rx_paths = 2;
-				priv->tx_paths = 2;
-				priv->rtl_chip = RTL8192E;
-			}
-		} else if (bonding == HPON_FSM_BONDING_1T2R) {
-			sprintf(priv->chip_name, "8191CU");
-			priv->rf_paths = 2;
-			priv->rx_paths = 2;
-			priv->tx_paths = 1;
-			priv->usb_interrupts = 1;
-			priv->rtl_chip = RTL8191C;
-		} else {
-			sprintf(priv->chip_name, "8192CU");
-			priv->rf_paths = 2;
-			priv->rx_paths = 2;
-			priv->tx_paths = 2;
-			priv->usb_interrupts = 1;
-			priv->rtl_chip = RTL8192C;
-		}
-		priv->has_wifi = 1;
-	} else {
-		sprintf(priv->chip_name, "8188CU");
-		priv->rf_paths = 1;
-		priv->rx_paths = 1;
-		priv->tx_paths = 1;
-		priv->rtl_chip = RTL8188C;
-		priv->usb_interrupts = 1;
-		priv->has_wifi = 1;
+	if (priv->iops->identify_chip(priv, val32))
+	{
+		return -ENOTSUPP;
 	}
 
 	switch (priv->rtl_chip) {
@@ -1560,6 +1499,7 @@ int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 		priv->ep_tx_count++;
 	}
 
+	// TODO: This is maybe USB only?
 	/*
 	 * Fallback for devices that do not provide REG_NORMAL_SIE_EP_TX
 	 */
@@ -1622,7 +1562,7 @@ rtl8xxxu_read_efuse8(struct rtl8xxxu_priv *priv, u16 offset, u8 *data)
 
 int rtl8xxxu_read_efuse(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int i, ret = 0;
 	u8 val8, word_mask, header, extheader;
 	u16 val16, efuse_addr, offset;
@@ -1755,7 +1695,7 @@ void rtl8xxxu_reset_8051(struct rtl8xxxu_priv *priv)
 
 static int rtl8xxxu_start_firmware(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int ret = 0, i;
 	u32 val32;
 
@@ -1890,13 +1830,13 @@ fw_abort:
 
 int rtl8xxxu_load_firmware(struct rtl8xxxu_priv *priv, char *fw_name)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	const struct firmware *fw;
 	int ret = 0;
 	u16 signature;
 
 	dev_info(dev, "%s: Loading firmware %s\n", DRIVER_NAME, fw_name);
-	if (request_firmware(&fw, fw_name, &priv->udev->dev)) {
+	if (request_firmware(&fw, fw_name, priv->dev)) {
 		dev_warn(dev, "request_firmware(%s) failed\n", fw_name);
 		ret = -EAGAIN;
 		goto exit;
@@ -1949,7 +1889,7 @@ void rtl8xxxu_firmware_self_reset(struct rtl8xxxu_priv *priv)
 		val16 = priv->iops->read16(priv, REG_SYS_FUNC);
 
 		if (!(val16 & SYS_FUNC_CPU_ENABLE)) {
-			dev_dbg(&priv->udev->dev,
+			dev_dbg(priv->dev,
 				"%s: Firmware self reset success!\n", __func__);
 			break;
 		}
@@ -1981,7 +1921,7 @@ rtl8xxxu_init_mac(struct rtl8xxxu_priv *priv)
 
 		ret = priv->iops->write8(priv, reg, val);
 		if (ret != 1) {
-			dev_warn(&priv->udev->dev,
+			dev_warn(priv->dev,
 				 "Failed to initialize MAC "
 				 "(reg: %04x, val %02x)\n", reg, val);
 			return -EAGAIN;
@@ -2010,7 +1950,7 @@ int rtl8xxxu_init_phy_regs(struct rtl8xxxu_priv *priv,
 
 		ret = priv->iops->write32(priv, reg, val);
 		if (ret != sizeof(val)) {
-			dev_warn(&priv->udev->dev,
+			dev_warn(priv->dev,
 				 "Failed to initialize PHY\n");
 			return -EAGAIN;
 		}
@@ -2197,7 +2137,7 @@ static int rtl8xxxu_init_rf_regs(struct rtl8xxxu_priv *priv,
 
 		ret = rtl8xxxu_write_rfreg(priv, path, reg, val);
 		if (ret) {
-			dev_warn(&priv->udev->dev,
+			dev_warn(priv->dev,
 				 "Failed to initialize RF\n");
 			return -EAGAIN;
 		}
@@ -2227,7 +2167,7 @@ int rtl8xxxu_init_phy_rf(struct rtl8xxxu_priv *priv,
 		reg_hssi_parm2 = REG_FPGA0_XB_HSSI_PARM2;
 		break;
 	default:
-		dev_err(&priv->udev->dev, "%s:Unsupported RF path %c\n",
+		dev_err(priv->dev, "%s:Unsupported RF path %c\n",
 			__func__, path + 'A');
 		return -EINVAL;
 	}
@@ -2346,7 +2286,7 @@ int rtl8xxxu_auto_llt_table(struct rtl8xxxu_priv *priv)
 
 	if (!i) {
 		ret = -EBUSY;
-		dev_warn(&priv->udev->dev, "LLT table init failed\n");
+		dev_warn(priv->dev, "LLT table init failed\n");
 	}
 
 	return ret;
@@ -2506,7 +2446,7 @@ void rtl8xxxu_fill_iqk_matrix_a(struct rtl8xxxu_priv *priv, bool iqk_ok,
 	priv->iops->write32(priv, REG_OFDM0_ENERGY_CCA_THRES, val32);
 
 	if (tx_only) {
-		dev_dbg(&priv->udev->dev, "%s: only TX\n", __func__);
+		dev_dbg(priv->dev, "%s: only TX\n", __func__);
 		return;
 	}
 
@@ -2583,7 +2523,7 @@ void rtl8xxxu_fill_iqk_matrix_b(struct rtl8xxxu_priv *priv, bool iqk_ok,
 	priv->iops->write32(priv, REG_OFDM0_ENERGY_CCA_THRES, val32);
 
 	if (tx_only) {
-		dev_dbg(&priv->udev->dev, "%s: only TX\n", __func__);
+		dev_dbg(priv->dev, "%s: only TX\n", __func__);
 		return;
 	}
 
@@ -2875,7 +2815,7 @@ static int rtl8xxxu_iqk_path_a(struct rtl8xxxu_priv *priv)
 	    ((reg_eac & 0x03ff0000) != 0x00360000))
 		result |= 0x02;
 	else
-		dev_warn(&priv->udev->dev, "%s: Path A RX IQK failed!\n",
+		dev_warn(priv->dev, "%s: Path A RX IQK failed!\n",
 			 __func__);
 out:
 	return result;
@@ -2911,7 +2851,7 @@ static int rtl8xxxu_iqk_path_b(struct rtl8xxxu_priv *priv)
 	    (((reg_ecc & 0x03ff0000) >> 16) != 0x36))
 		result |= 0x02;
 	else
-		dev_warn(&priv->udev->dev, "%s: Path B RX IQK failed!\n",
+		dev_warn(priv->dev, "%s: Path B RX IQK failed!\n",
 			 __func__);
 out:
 	return result;
@@ -2920,7 +2860,7 @@ out:
 static void rtl8xxxu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 				     int result[][8], int t)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 i, val32;
 	int path_a_ok, path_b_ok;
 	int retry = 2;
@@ -3135,7 +3075,7 @@ void rtl8xxxu_gen2_prepare_calibrate(struct rtl8xxxu_priv *priv, u8 start)
 
 void rtl8xxxu_gen1_phy_iq_calibrate(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int result[4][8];	/* last is final result */
 	int i, candidate;
 	bool path_a_ok, path_b_ok;
@@ -3311,7 +3251,7 @@ static int rtl8xxxu_set_bssid(struct rtl8xxxu_priv *priv, const u8 *bssid)
 	int i;
 	u16 reg;
 
-	dev_dbg(&priv->udev->dev, "%s: (%pM)\n", __func__, bssid);
+	dev_dbg(priv->dev, "%s: (%pM)\n", __func__, bssid);
 
 	reg = REG_BSSID;
 
@@ -3381,7 +3321,7 @@ static int rtl8xxxu_active_to_emu(struct rtl8xxxu_priv *priv)
 	}
 
 	if (!count) {
-		dev_warn(&priv->udev->dev, "%s: Disabling MAC timed out\n",
+		dev_warn(priv->dev, "%s: Disabling MAC timed out\n",
 			 __func__);
 		ret = -EBUSY;
 		goto exit;
@@ -3420,7 +3360,7 @@ int rtl8xxxu_active_to_lps(struct rtl8xxxu_priv *priv)
 	}
 
 	if (!count) {
-		dev_warn(&priv->udev->dev,
+		dev_warn(priv->dev,
 			 "%s: RX poll timed out (0x05f8)\n", __func__);
 		ret = -EBUSY;
 		goto exit;
@@ -3504,7 +3444,7 @@ static int rtl8xxxu_emu_to_disabled(struct rtl8xxxu_priv *priv)
 
 int rtl8xxxu_flush_fifo(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 val32;
 	int retry, retval;
 
@@ -3690,7 +3630,7 @@ static void rtl8xxxu_init_queue_reserved_page(struct rtl8xxxu_priv *priv)
 static int rtl8xxxu_init_device(struct ieee80211_hw *hw)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	struct rtl8xxxu_fileops *fops = priv->fops;
 	bool macpower;
 	int ret;
@@ -4127,7 +4067,7 @@ void rtl8xxxu_update_rate_mask(struct rtl8xxxu_priv *priv, u32 ramask, int sgi)
 	if (sgi)
 		h2c.ramask.arg |= 0x20;
 
-	dev_dbg(&priv->udev->dev, "%s: rate mask %08x, arg %02x, size %zi\n",
+	dev_dbg(priv->dev, "%s: rate mask %08x, arg %02x, size %zi\n",
 		__func__, ramask, h2c.ramask.arg, sizeof(h2c.ramask));
 	rtl8xxxu_gen1_h2c_cmd(priv, &h2c, sizeof(h2c.ramask));
 }
@@ -4153,7 +4093,7 @@ void rtl8xxxu_gen2_update_rate_mask(struct rtl8xxxu_priv *priv,
 
 	h2c.b_macid_cfg.data2 = bw;
 
-	dev_dbg(&priv->udev->dev, "%s: rate mask %08x, arg %02x, size %zi\n",
+	dev_dbg(priv->dev, "%s: rate mask %08x, arg %02x, size %zi\n",
 		__func__, ramask, h2c.ramask.arg, sizeof(h2c.b_macid_cfg));
 	rtl8xxxu_gen2_h2c_cmd(priv, &h2c, sizeof(h2c.b_macid_cfg));
 }
@@ -4236,11 +4176,11 @@ void rtl8xxxu_gen1_init_aggregation(struct rtl8xxxu_priv *priv)
 		if (rtl8xxxu_dma_agg_pages <= page_thresh)
 			timeout = page_thresh;
 		else if (rtl8xxxu_dma_agg_pages <= 6)
-			dev_err(&priv->udev->dev,
+			dev_err(priv->dev,
 				"%s: dma_agg_pages=%i too small, minimum is 6\n",
 				__func__, rtl8xxxu_dma_agg_pages);
 		else
-			dev_err(&priv->udev->dev,
+			dev_err(priv->dev,
 				"%s: dma_agg_pages=%i larger than limit %i\n",
 				__func__, rtl8xxxu_dma_agg_pages, page_thresh);
 	}
@@ -4256,7 +4196,7 @@ void rtl8xxxu_gen1_init_aggregation(struct rtl8xxxu_priv *priv)
 		if (rtl8xxxu_dma_agg_timeout <= 127)
 			timeout = rtl8xxxu_dma_agg_timeout;
 		else
-			dev_err(&priv->udev->dev,
+			dev_err(priv->dev,
 				"%s: Invalid dma_agg_timeout: %i\n",
 				__func__, rtl8xxxu_dma_agg_timeout);
 	}
@@ -4278,7 +4218,7 @@ static void rtl8xxxu_set_basic_rates(struct rtl8xxxu_priv *priv, u32 rate_cfg)
 	val32 |= rate_cfg;
 	priv->iops->write32(priv, REG_RESPONSE_RATE_SET, val32);
 
-	dev_dbg(&priv->udev->dev, "%s: rates %08x\n", __func__,	rate_cfg);
+	dev_dbg(priv->dev, "%s: rates %08x\n", __func__,	rate_cfg);
 
 	while (rate_cfg) {
 		rate_cfg = (rate_cfg >> 1);
@@ -4292,7 +4232,7 @@ rtl8xxxu_bss_info_changed(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 			  struct ieee80211_bss_conf *bss_conf, u32 changed)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	struct ieee80211_sta *sta;
 	u32 val32;
 	u8 val8;
@@ -4495,7 +4435,7 @@ rtl8xxxu_fill_txdesc_v1(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 {
 	struct ieee80211_rate *tx_rate = ieee80211_get_tx_rate(hw, tx_info);
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 rate;
 	u16 rate_flags = tx_info->control.rates[0].flags;
 	u16 seq_number;
@@ -4565,7 +4505,7 @@ rtl8xxxu_fill_txdesc_v2(struct ieee80211_hw *hw, struct ieee80211_hdr *hdr,
 {
 	struct ieee80211_rate *tx_rate = ieee80211_get_tx_rate(hw, tx_info);
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	struct rtl8xxxu_txdesc40 *tx_desc40;
 	u32 rate;
 	u16 rate_flags = tx_info->control.rates[0].flags;
@@ -4635,7 +4575,7 @@ static void rtl8xxxu_tx(struct ieee80211_hw *hw,
 	struct rtl8xxxu_txdesc32 *tx_desc;
 	struct ieee80211_sta *sta = NULL;
 	struct ieee80211_vif *vif = tx_info->control.vif;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 queue, rts_rate;
 	u16 pktlen = skb->len;
 	u16 rate_flag = tx_info->control.rates[0].flags;
@@ -4776,7 +4716,7 @@ static void rtl8723bu_handle_c2h(struct rtl8xxxu_priv *priv,
 				 struct sk_buff *skb)
 {
 	struct rtl8723bu_c2h *c2h = (struct rtl8723bu_c2h *)skb->data;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int len;
 
 	len = skb->len - 2;
@@ -4936,7 +4876,7 @@ int rtl8xxxu_parse_rxdesc24(struct rtl8xxxu_priv *priv, struct sk_buff *skb)
 	skb_pull(skb, drvinfo_sz + desc_shift);
 
 	if (rx_desc->rpt_sel) {
-		struct device *dev = &priv->udev->dev;
+		struct device *dev = priv->dev;
 		dev_dbg(dev, "%s: C2H packet\n", __func__);
 		rtl8723bu_handle_c2h(priv, skb);
 		dev_kfree_skb(skb);
@@ -5002,13 +4942,13 @@ static void rtl8xxxu_remove_interface(struct ieee80211_hw *hw,
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
 
-	dev_dbg(&priv->udev->dev, "%s\n", __func__);
+	dev_dbg(priv->dev, "%s\n", __func__);
 }
 
 static int rtl8xxxu_config(struct ieee80211_hw *hw, u32 changed)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u16 val16;
 	int ret = 0, channel;
 	bool ht40;
@@ -5057,7 +4997,7 @@ static int rtl8xxxu_conf_tx(struct ieee80211_hw *hw,
 			    const struct ieee80211_tx_queue_params *param)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 val32;
 	u8 aifs, acm_ctrl, acm_bit;
 
@@ -5111,7 +5051,7 @@ static void rtl8xxxu_configure_filter(struct ieee80211_hw *hw,
 	struct rtl8xxxu_priv *priv = hw->priv;
 	u32 rcr = priv->iops->read32(priv, REG_RCR);
 
-	dev_dbg(&priv->udev->dev, "%s: changed_flags %08x, total_flags %08x\n",
+	dev_dbg(priv->dev, "%s: changed_flags %08x, total_flags %08x\n",
 		__func__, changed_flags, *total_flags);
 
 	/*
@@ -5175,7 +5115,7 @@ static int rtl8xxxu_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
 			    struct ieee80211_key_conf *key)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u8 mac_addr[ETH_ALEN];
 	u8 val8;
 	u16 val16;
@@ -5248,7 +5188,7 @@ rtl8xxxu_ampdu_action(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		      struct ieee80211_ampdu_params *params)
 {
 	struct rtl8xxxu_priv *priv = hw->priv;
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u8 ampdu_factor, ampdu_density;
 	struct ieee80211_sta *sta = params->sta;
 	enum ieee80211_ampdu_mlme_action action = params->action;
@@ -5285,6 +5225,97 @@ rtl8xxxu_ampdu_action(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 		break;
 	}
 	return 0;
+}
+
+int rtl8xxxu_hw_init(struct rtl8xxxu_priv *priv)
+{
+	struct ieee80211_hw *hw = priv->hw;
+	struct ieee80211_supported_band *sband;
+	int ret;
+	
+	ret = rtl8xxxu_identify_chip(priv);
+	if (ret) {
+		dev_err(priv->dev, "Fatal - failed to identify chip\n");
+		goto exit;
+	}
+
+	ret = rtl8xxxu_read_efuse(priv);
+	if (ret) {
+		dev_err(priv->dev, "Fatal - failed to read EFuse\n");
+		goto exit;
+	}
+
+	ret = priv->fops->parse_efuse(priv);
+	if (ret) {
+		dev_err(priv->dev, "Fatal - failed to parse EFuse\n");
+		goto exit;
+	}
+	
+	rtl8xxxu_print_chipinfo(priv);
+	
+	ret = priv->fops->load_firmware(priv);
+	if (ret) {
+		dev_err(priv->dev, "Fatal - failed to load firmware\n");
+		goto exit;
+	}
+
+	//ret = rtl8xxxu_init_device(hw);
+	//if (ret) TODO: Fix powerup
+	//	goto exit;
+
+	hw->wiphy->max_scan_ssids = 1;
+	hw->wiphy->max_scan_ie_len = IEEE80211_MAX_DATA_LEN;
+	hw->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION);
+	hw->queues = 4;
+
+	sband = &rtl8xxxu_supported_band;
+	sband->ht_cap.ht_supported = true;
+	sband->ht_cap.ampdu_factor = IEEE80211_HT_MAX_AMPDU_64K;
+	sband->ht_cap.ampdu_density = IEEE80211_HT_MPDU_DENSITY_16;
+	sband->ht_cap.cap = IEEE80211_HT_CAP_SGI_20 | IEEE80211_HT_CAP_SGI_40;
+	memset(&sband->ht_cap.mcs, 0, sizeof(sband->ht_cap.mcs));
+	sband->ht_cap.mcs.rx_mask[0] = 0xff;
+	sband->ht_cap.mcs.rx_mask[4] = 0x01;
+	if (priv->rf_paths > 1) {
+		sband->ht_cap.mcs.rx_mask[1] = 0xff;
+		sband->ht_cap.cap |= IEEE80211_HT_CAP_SGI_40;
+	}
+	sband->ht_cap.mcs.tx_params = IEEE80211_HT_MCS_TX_DEFINED;
+	/*
+	 * Some APs will negotiate HT20_40 in a noisy environment leading
+	 * to miserable performance. Rather than defaulting to this, only
+	 * enable it if explicitly requested at module load time.
+	 */
+	if (rtl8xxxu_ht40_2g) {
+		dev_info(priv->dev, "Enabling HT_20_40 on the 2.4GHz band\n");
+		sband->ht_cap.cap |= IEEE80211_HT_CAP_SUP_WIDTH_20_40;
+	}
+	hw->wiphy->bands[NL80211_BAND_2GHZ] = sband;
+
+	hw->wiphy->rts_threshold = 2347;
+
+	SET_IEEE80211_DEV(priv->hw, priv->dev); // TODO: Not sure
+	SET_IEEE80211_PERM_ADDR(hw, priv->mac_addr);
+
+	hw->extra_tx_headroom = priv->fops->tx_desc_size;
+	ieee80211_hw_set(hw, SIGNAL_DBM);
+	/*
+	 * The firmware handles rate control
+	 */
+	ieee80211_hw_set(hw, HAS_RATE_CONTROL);
+	ieee80211_hw_set(hw, AMPDU_AGGREGATION);
+
+	wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
+
+	ret = ieee80211_register_hw(priv->hw);
+	if (ret) {
+		dev_err(priv->dev, "%s: Failed to register: %i\n",
+			__func__, ret);
+		goto exit;
+	}
+	
+exit:
+	return ret;
 }
 
 static int rtl8xxxu_start(struct ieee80211_hw *hw)

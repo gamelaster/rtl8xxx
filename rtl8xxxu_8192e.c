@@ -612,21 +612,21 @@ static int rtl8192eu_parse_efuse(struct rtl8xxxu_priv *priv)
 	priv->has_xtalk = 1;
 	priv->xtalk = priv->efuse_wifi.efuse8192eu.xtal_k & 0x3f;
 
-	dev_info(&priv->udev->dev, "Vendor: %.7s\n", efuse->vendor_name);
-	dev_info(&priv->udev->dev, "Product: %.11s\n", efuse->device_name);
+	dev_info(priv->dev, "Vendor: %.7s\n", efuse->vendor_name);
+	dev_info(priv->dev, "Product: %.11s\n", efuse->device_name);
 	if (memchr_inv(efuse->serial, 0xff, 11))
-		dev_info(&priv->udev->dev, "Serial: %.11s\n", efuse->serial);
+		dev_info(priv->dev, "Serial: %.11s\n", efuse->serial);
 	else
-		dev_info(&priv->udev->dev, "Serial not available.\n");
+		dev_info(priv->dev, "Serial not available.\n");
 
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_EFUSE) {
 		unsigned char *raw = priv->efuse_wifi.raw;
 
-		dev_info(&priv->udev->dev,
+		dev_info(priv->dev,
 			 "%s: dumping efuse (0x%02zx bytes):\n",
 			 __func__, sizeof(struct rtl8192eu_efuse));
 		for (i = 0; i < sizeof(struct rtl8192eu_efuse); i += 8)
-			dev_info(&priv->udev->dev, "%02x: %8ph\n", i, &raw[i]);
+			dev_info(priv->dev, "%02x: %8ph\n", i, &raw[i]);
 	}
 	return 0;
 }
@@ -838,7 +838,7 @@ static int rtl8192eu_rx_iqk_path_a(struct rtl8xxxu_priv *priv)
 	    ((reg_eac & 0x03ff0000) != 0x00360000))
 		result |= 0x02;
 	else
-		dev_warn(&priv->udev->dev, "%s: Path A RX IQK failed!\n",
+		dev_warn(priv->dev, "%s: Path A RX IQK failed!\n",
 			 __func__);
 
 out:
@@ -885,7 +885,7 @@ static int rtl8192eu_iqk_path_b(struct rtl8xxxu_priv *priv)
 	    ((reg_ebc & 0x03ff0000) != 0x00420000))
 		result |= 0x01;
 	else
-		dev_warn(&priv->udev->dev, "%s: Path B IQK failed!\n",
+		dev_warn(priv->dev, "%s: Path B IQK failed!\n",
 			 __func__);
 
 	return result;
@@ -1005,7 +1005,7 @@ static int rtl8192eu_rx_iqk_path_b(struct rtl8xxxu_priv *priv)
 	    ((reg_ecc & 0x03ff0000) != 0x00360000))
 		result |= 0x02;
 	else
-		dev_warn(&priv->udev->dev, "%s: Path B RX IQK failed!\n",
+		dev_warn(priv->dev, "%s: Path B RX IQK failed!\n",
 			 __func__);
 
 out:
@@ -1015,7 +1015,7 @@ out:
 static void rtl8192eu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 				      int result[][8], int t)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u32 i, val32;
 	int path_a_ok, path_b_ok;
 	int retry = 2;
@@ -1200,7 +1200,7 @@ static void rtl8192eu_phy_iqcalibrate(struct rtl8xxxu_priv *priv,
 
 static void rtl8192eu_phy_iq_calibrate(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	int result[4][8];	/* last is final result */
 	int i, candidate;
 	bool path_a_ok, path_b_ok;
@@ -1401,7 +1401,7 @@ exit:
 
 static int rtl8192eu_active_to_lps(struct rtl8xxxu_priv *priv)
 {
-	struct device *dev = &priv->udev->dev;
+	struct device *dev = priv->dev;
 	u8 val8;
 	u16 val16;
 	u32 val32;
@@ -1486,7 +1486,7 @@ static int rtl8192eu_active_to_emu(struct rtl8xxxu_priv *priv)
 	}
 
 	if (!count) {
-		dev_warn(&priv->udev->dev, "%s: Disabling MAC timed out\n",
+		dev_warn(priv->dev, "%s: Disabling MAC timed out\n",
 			 __func__);
 		ret = -EBUSY;
 		goto exit;

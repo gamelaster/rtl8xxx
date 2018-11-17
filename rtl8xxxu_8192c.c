@@ -392,9 +392,9 @@ static int rtl8192cu_parse_efuse(struct rtl8xxxu_priv *priv)
 	       efuse->ht20_max_power_offset,
 	       sizeof(efuse->ht20_max_power_offset));
 
-	dev_info(&priv->udev->dev, "Vendor: %.7s\n",
+	dev_info(priv->dev, "Vendor: %.7s\n",
 		 efuse->vendor_name);
-	dev_info(&priv->udev->dev, "Product: %.20s\n",
+	dev_info(priv->dev, "Product: %.20s\n",
 		 efuse->device_name);
 
 	priv->power_base = &rtl8192c_power_base;
@@ -410,11 +410,11 @@ static int rtl8192cu_parse_efuse(struct rtl8xxxu_priv *priv)
 	if (rtl8xxxu_debug & RTL8XXXU_DEBUG_EFUSE) {
 		unsigned char *raw = priv->efuse_wifi.raw;
 
-		dev_info(&priv->udev->dev,
+		dev_info(priv->dev,
 			 "%s: dumping efuse (0x%02zx bytes):\n",
 			 __func__, sizeof(struct rtl8192cu_efuse));
 		for (i = 0; i < sizeof(struct rtl8192cu_efuse); i += 8)
-			dev_info(&priv->udev->dev, "%02x: %8ph\n", i, &raw[i]);
+			dev_info(priv->dev, "%02x: %8ph\n", i, &raw[i]);
 	}
 	return 0;
 }
