@@ -1214,11 +1214,6 @@ struct rtl8xxxu_fileops;
 
 struct rtl8xxxu_priv {
 	struct ieee80211_hw *hw;
-<<<<<<< HEAD
-=======
-	struct usb_device *udev;
-	struct sdio_func *sfunc;
->>>>>>> Begin work on SDIO
 	struct rtl8xxxu_fileops *fops;
 	struct rtl8xxxu_intops *iops;
 	struct device *dev;
@@ -1331,6 +1326,14 @@ struct rtl8xxxu_usb_card {
 		u8 val8;
 	} usb_buf;
 	u32 usb_interrupts:1;
+};
+
+struct rtl8xxxu_sdio_card {
+	struct rtl8xxxu_priv *priv;
+	struct sdio_func *func;
+	
+	u32 block_transfer_length;
+	
 };
 
 struct rtl8xxxu_rx_urb {

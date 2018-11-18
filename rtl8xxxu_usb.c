@@ -745,7 +745,7 @@ static int rtl8xxxu_usb_tx(struct rtl8xxxu_priv *priv, struct sk_buff *skb, u32 
 	return 0;
 }
 
-int rtl8xxxu_usb_identify_chip(struct rtl8xxxu_priv *priv, u32 chip_cfg)
+static int rtl8xxxu_usb_identify_chip(struct rtl8xxxu_priv *priv, u32 chip_cfg)
 {
 	struct rtl8xxxu_usb_card *card = priv->card;
 	u32 bonding;

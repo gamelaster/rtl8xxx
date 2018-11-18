@@ -1441,6 +1441,7 @@ int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 	val32 = priv->iops->read32(priv, REG_SYS_CFG);
 	priv->chip_cut = (val32 & SYS_CFG_CHIP_VERSION_MASK) >>
 		SYS_CFG_CHIP_VERSION_SHIFT;
+	printk("CHIP CFG: %d", val32);
 	if (val32 & SYS_CFG_TRP_VAUX_EN) {
 		dev_info(dev, "Unsupported test chip\n");
 		return -ENOTSUPP;
@@ -1450,6 +1451,8 @@ int rtl8xxxu_identify_chip(struct rtl8xxxu_priv *priv)
 	{
 		return -ENOTSUPP;
 	}
+	
+	return 0; // TODO: TESTING
 
 	switch (priv->rtl_chip) {
 	case RTL8188E:
@@ -5238,6 +5241,7 @@ int rtl8xxxu_hw_init(struct rtl8xxxu_priv *priv)
 		dev_err(priv->dev, "Fatal - failed to identify chip\n");
 		goto exit;
 	}
+	goto exit; // TODO: TESTING
 
 	ret = rtl8xxxu_read_efuse(priv);
 	if (ret) {
@@ -5404,6 +5408,7 @@ static int __init rtl8xxxu_module_init(void)
 static void __exit rtl8xxxu_module_exit(void)
 {
 	rtl8xxxu_usb_deregister();
+	rtl8xxxu_sdio_deregister();
 }
 
 module_init(rtl8xxxu_module_init);
