@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 obj-m	+= rtl8xxxu.o
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
